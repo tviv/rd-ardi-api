@@ -1,4 +1,7 @@
-require('dotenv').config();
+if (process.env.CHECK_PROD !== 'yes')
+    require('dotenv').config();
+else
+    require('dotenv').config({ path: "./.env.production" });
 
 const config = {
     dwConfig: {
@@ -7,9 +10,9 @@ const config = {
         server: process.env.DW_SERVER,
         database: process.env.DW_DATABASES,
 
-        // options: {
-        //     encrypt: process.env.DW_OPTIONS_ENCRYPT // Use this if you're on Windows Azure
-        // }
+        options: {
+            encrypt: process.env.DW_OPTIONS_ENCRYPT // Use this if you're on Windows Azure
+        }
     },
 
     olapConfig: {

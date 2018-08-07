@@ -5,6 +5,7 @@ const {olapConfig} = require('../config');
 let mdx  = {
 
     getDataset: function (query, user, password) {
+        console.log(query);
         return new Promise((resolve, reject) => {
             xmla = new xmla4js.Xmla({
                 async: true,
@@ -116,18 +117,26 @@ let mdx  = {
 
         }
 
-        //console.dir(tableset);
+        //console.log('rows:', tableset.rows.count());
         return {error: null, data: tableset};
 
     },
 
-    getMDXPeriodFromDate: function(date, addedDays, hierarchiePrefix) {
+    dateToMDX: function(date, hierarchiePrefix) {
         let result = {};
         let m = moment(date);
-        result.dateKey1 = hierarchiePrefix + '.&[' + m.format('YYYY-MM-DDT00:00:00') + ']';
+        let dateKey = hierarchiePrefix + '.&[' + m.format('YYYY-MM-DDT00:00:00') + ']';
+
+        return dateKey;
+    },
+
+    getMDXPeriod: function(date, addedDays, hierarchiePrefix) {
+        let result = {};
+        let m = moment(date);
+        result.dateKey1 = this.dateToMDX(date, hierarchiePrefix);
 
         let m2 = m.add(addedDays, 'day');
-        result.dateKey2 = hierarchiePrefix + '.&[' + m2.format('YYYY-MM-DDT00:00:00') + ']';
+        result.dateKey2 = this.dateToMDX(m2, hierarchiePrefix);
 
         result.periodString = result.dateKey2 + ':'  + result.dateKey1;
         return result;
