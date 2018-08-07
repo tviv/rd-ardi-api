@@ -45,12 +45,6 @@ router.post("/sales-cone", function(req , res) {
         query = query.replace(regLastPar, ', {' + req.body.segmentFilter + '})');
     }
 
-    if (req.body && req.body.dateFilter) {
-        let dates = olap.getMDXPeriodFromDate(req.body.dateFilter, -6, '[Даты].[Дата]');
-        console.log('date is converted to:', dates.periodString);
-
-        query = query.replace(regLastPar, ', {' + dates.periodString + '})');
-    }
 
     if (req.body && req.body.dateFilter) {
         let date = olap.dateToMDX(req.body.dateFilter, '[Даты].[Дата]');
