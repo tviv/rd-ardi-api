@@ -1,7 +1,8 @@
+const path = require('path');
 if (process.env.CHECK_PROD !== 'yes')
-    require('dotenv').config();
+    require('dotenv').config({ path: path.join(__dirname, '.env') });
 else
-    require('dotenv').config({ path: "./.env.production" });
+    require('dotenv').config({ path: path.join(__dirname, '.env.production') });
 
 const config = {
     dwConfig: {
