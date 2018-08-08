@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 
 const dwRouter = require('./routes/dw-router');
 const olapRouter = require('./routes/olap-router');
+const path = require('path');
 
 var cors = require('cors')
 
