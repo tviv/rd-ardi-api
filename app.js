@@ -21,6 +21,7 @@ app.use('/api/olap', olapRouter);
 
 //Express only serves static assets in production
 console.log("NODE_ENV: ", process.env.NODE_ENV);
+console.log("OLAP_URL: ", process.env.OLAP_URL);
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static('../protop1/build'));
 
