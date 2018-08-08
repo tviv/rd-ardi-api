@@ -19,21 +19,21 @@ app.set('port', (process.env.PORT || 3101));
 app.use('/', dwRouter);
 app.use('/api/olap', olapRouter);
 
-// Express only serves static assets in production
-// console.log("NODE_ENV: ", process.env.NODE_ENV);
-// if (process.env.NODE_ENV === 'production') {
-//     app.use(express.static('client/build'));
-//
-//     // Return the main index.html, so react-router render the route in the client
-//     app.get('/', (req, res) => {
-//         res.sendFile(path.resolve('client/build', 'index.html'));
-//     });
-//}
+//Express only serves static assets in production
+console.log("NODE_ENV: ", process.env.NODE_ENV);
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static('../protop1/build'));
 
-// catch 404 and forward to error handler
-// app.use(function(req, res, next) {
-//     next(createError(404));
-// });
+    // Return the main index.html, so react-router render the route in the client
+    app.get('/', (req, res) => {
+        res.sendFile(path.resolve('client/build', 'index.html'));
+    });
+}
+
+//catch 404 and forward to error handler
+app.use(function(req, res, next) {
+    next(createError(404));
+});
 
 // error handler
 // app.use(function(err, req, res, next) {
