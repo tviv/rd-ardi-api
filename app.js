@@ -14,7 +14,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use(cors()); //todo
+//app.use(cors()); //todo
 app.set('port', (process.env.PORT || 3101));
 
 app.use('/', dwRouter);

@@ -54,7 +54,7 @@ router.post("/sales-cone", function(req , res) {
     }
 
     if (req.body && req.body.periodFilter) {
-        let dates = olap.getMDXPeriod(req.body.periodFilter.toDate, req.body.periodFilter.days, '[Даты].[Дата]');
+        let dates = olap.getMDXPeriod(req.body.periodFilter.date, req.body.periodFilter.days, '[Даты].[Дата]');
         console.log('period is converted to:', dates.periodString);
 
         query = query.replace(regLastPar, ', {' + dates.periodString + '})');
@@ -104,11 +104,11 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
         let date = olap.dateToMDX(req.body.dateFilter, '[Даты].[Дата]');
         console.log('date is converted to:', date);
 
-        condString +=  '{' + dates.periodString + '},';
+        condString +=  '{' + date + '},';
     }
 
     if (req.body && req.body.periodFilter) {
-        let dates = olap.getMDXPeriod(req.body.periodFilter.toDate, req.body.periodFilter.days, '[Даты].[Дата]');
+        let dates = olap.getMDXPeriod(req.body.periodFilter.date, req.body.periodFilter.days, '[Даты].[Дата]');
         console.log('period is converted to:', dates.periodString);
 
         condString +=  '{' + dates.periodString + '},';
