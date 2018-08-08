@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === 'production') {
 
     // Return the main index.html, so react-router render the route in the client
     app.get('/', (req, res) => {
-        res.sendFile(path.resolve('client/build', 'index.html'));
+        res.sendFile(path.resolve('../protop1/build', 'index.html'));
     });
 }
 
