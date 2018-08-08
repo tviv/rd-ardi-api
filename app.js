@@ -24,11 +24,11 @@ app.use('/api/olap', olapRouter);
 console.log("NODE_ENV: ", process.env.NODE_ENV);
 console.log("OLAP_URL: ", process.env.OLAP_URL);
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static('../protop1/build'));
+    app.use(express.static(path.join(__dirname,'protop1/build')));
 
     // Return the main index.html, so react-router render the route in the client
     app.get('/', (req, res) => {
-        res.sendFile(path.resolve('../protop1/build', 'index.html'));
+        res.sendFile(path.resolve('./protop1/build', 'index.html'));
     });
 }
 
