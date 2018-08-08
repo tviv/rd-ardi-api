@@ -26,11 +26,11 @@ console.log("OLAP_URL: ", process.env.OLAP_URL);
 console.log("path: ", path);
 console.log("__dirname: ", __dirname);
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname,'work/protop1/build')));
+    app.use(express.static(path.join(__dirname,'../protop1/build')));
 
     // Return the main index.html, so react-router render the route in the client
     app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, 'work/protop1/build', 'index.html'));
+        res.sendFile(path.join(__dirname, '../protop1/build', 'index.html'));
     });
 }
 
