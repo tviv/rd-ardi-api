@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const olap = require('../olap/olap-helper');
+const helper = require('./router-helper');
 
 
 router.post("/sales-cone", function(req , res) {
@@ -31,7 +32,7 @@ router.post("/sales-cone", function(req , res) {
          [Подразделения].[Организации].[All]
         
         SELECT NON EMPTY ({[Код], [Подразделения].[Организации].[КУП] , order([Подразделения].[Организации].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
-        NON EMPTY [Товары].[Товар].[Товар].Members DIMENSION PROPERTIES PARENT_UNIQUE_NAME,HIERARCHY_UNIQUE_NAME,[Товары].[Товар].[Товар].[Код товара] ON 1
+        ORDER(NONEMPTY([Товары].[Товар].[Товар].Members), [Measures].[КУП], DESC)  DIMENSION PROPERTIES PARENT_UNIQUE_NAME,HIERARCHY_UNIQUE_NAME,[Товары].[Товар].[Товар].[Код товара] ON 1
         FROM [Чеки]
         WHERE ([Measures].[КУП])
         `;
@@ -91,30 +92,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
     `;
 
     //todo more unique
-    let condString = '';
-
-    if (req.body && req.body.shopFilter) {
-        condString += '{' + req.body.shopFilter + '},';
-    }
-    if (req.body && req.body.goodFilter) {
-        condString += '{' + req.body.goodFilter + '},';
-    }
-
-    if (req.body && req.body.dateFilter) {
-        let date = olap.dateToMDX(req.body.dateFilter, '[Даты].[Дата]');
-        console.log('date is converted to:', date);
-
-        condString +=  '{' + date + '},';
-    }
-
-    if (req.body && req.body.periodFilter) {
-        let dates = olap.getMDXPeriod(req.body.periodFilter.date, req.body.periodFilter.days, '[Даты].[Дата]');
-        console.log('period is converted to:', dates.periodString);
-
-        condString +=  '{' + dates.periodString + '},';
-    }
-
-    condString = condString.replace(/,$/, '');
+    let condString = helper.getMDXConditionString(req.body);
     query = query.replace(/\(\s*select\s*\(((.|\s)+)\)\s*on 0/igm, '(select (' + condString + ') on 0'); //todo remove reaptings - replace only group 1
 
     olap.getDataset(query)
@@ -123,6 +101,32 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
         .catch((err)=>res.send(err.exception.message)); //todo move to common error handler, without showing details in repconse, only in log file
 });
 
+
+router.post("/sales-cone/cell-property", function(req , res) {
+    console.log(req.body);
+
+
+    query = `
+        WITH 
+        MEMBER [Остаток] AS [Measures].[Остаток количество]
+        MEMBER [Цена продажи] AS [Measures].[Средняя цена]
+        MEMBER [Сумма продажи] AS [Measures].[Сумма]
+        
+        SELECT {[Цена продажи], [Сумма продажи], [Маржа %], [Остаток]} ON 0
+        ,[Товары].[Товары]  ON 1
+        
+        FROM [Чеки]
+    `;
+
+    //todo more unique
+    let condString = helper.getMDXConditionString(req.body);
+    query = query + ` where (${condString})`;
+
+    olap.getDataset(query)
+        .then((result)=>{
+            res.json(olap.dataset2Tableset(result.data))})
+        .catch((err)=>res.send(err.exception.message)); //todo move to common error handler, without showing details in repconse, only in log file
+});
 
 
 router.post("/dim", function(req , res) {
