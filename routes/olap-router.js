@@ -37,30 +37,8 @@ router.post("/sales-cone", function(req , res) {
         WHERE ([Measures].[КУП])
         `;
 
-    //todo more unique
-    let regLastPar = /\)\s*$/;
-    if (req.body && req.body.shopFilter) {
-        query = query.replace(regLastPar, ', {' + req.body.shopFilter + '})');
-    }
-    if (req.body && req.body.segmentFilter) {
-        query = query.replace(regLastPar, ', {' + req.body.segmentFilter + '})');
-    }
-
-
-    if (req.body && req.body.dateFilter) {
-        let date = olap.dateToMDX(req.body.dateFilter, '[Даты].[Дата]');
-        console.log('date is converted to:', date);
-
-        query = query.replace(regLastPar, ', {' + date + '})');
-    }
-
-    if (req.body && req.body.periodFilter) {
-        let dates = olap.getMDXPeriod(req.body.periodFilter.date, req.body.periodFilter.days, '[Даты].[Дата]');
-        console.log('period is converted to:', dates.periodString);
-
-        query = query.replace(regLastPar, ', {' + dates.periodString + '})');
-    }
-
+    let condString = helper.getMDXConditionString(req.body);
+    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
 
     olap.getDataset(query)
         .then((result)=>{

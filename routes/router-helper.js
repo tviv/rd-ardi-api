@@ -9,6 +9,9 @@ module.exports = {
         if (inputObject.shopFilter) {
             condString += '{' + inputObject.shopFilter + '},';
         }
+        if (inputObject.segmentFilter) {
+            condString += '{' + inputObject.segmentFilter + '},';
+        }
         if (inputObject.goodFilter) {
             condString += '{' + inputObject.goodFilter + '},';
         }
@@ -27,7 +30,7 @@ module.exports = {
             condString +=  '{' + dates.periodString + '},';
         }
 
-        condString = condString.replace(/,$/, '');
+        condString = condString.replace(/\{\},/,'').replace(/,$/, '');
         
         return condString
     }
