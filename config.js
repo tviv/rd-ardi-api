@@ -21,7 +21,7 @@ const config = {
         password: process.env.OLAP_PASSWORD,
         url: process.env.OLAP_URL,
         database: process.env.OLAP_DATABASES,
-
+        isGettingOnlyFullWeeks: true
     },
 };
 

@@ -133,7 +133,10 @@ let mdx  = {
     getMDXPeriod: function(date, addedDays, hierarchiePrefix) {
         let result = {};
         let m = moment(date);
-        result.dateKey1 = this.dateToMDX(date, hierarchiePrefix);
+        if (olapConfig.isGettingOnlyFullWeeks) {
+            m = m.isoWeekday(1).add(-1, 'day');
+        }
+        result.dateKey1 = this.dateToMDX(m, hierarchiePrefix);
 
         let m2 = m.add(addedDays, 'day');
         result.dateKey2 = this.dateToMDX(m2, hierarchiePrefix);

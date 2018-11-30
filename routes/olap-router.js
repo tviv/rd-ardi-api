@@ -31,7 +31,7 @@ router.post("/sales-cone", function(req , res) {
          member [Подразделения].[Организации].[КУП] as
          [Подразделения].[Организации].[All]
         
-        SELECT NON EMPTY ({[Код], [Подразделения].[Организации].[КУП] , order([Подразделения].[Организации].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
+        SELECT NON EMPTY ({[Код], [Подразделения].[Организации].[КУП], order([Подразделения].[Организации].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
         ORDER(NONEMPTY([Товары].[Товар].[Товар].Members), [Measures].[КУП], DESC)  DIMENSION PROPERTIES PARENT_UNIQUE_NAME,HIERARCHY_UNIQUE_NAME,[Товары].[Товар].[Товар].[Код товара] ON 1
         FROM [Чеки]
         WHERE ([Measures].[КУП])
@@ -60,7 +60,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
           member [Подразделения].[Подразделение].[Общий КУП] as
          [Подразделения].[Подразделение].[All]
         
-        SELECT [Даты].[Дата].[Дата].Members ON 0
+        SELECT [Даты].[Недели].[Неделя] ON 0
         ,NON EMPTY {[Подразделения].[Подразделение].[Общий КУП], [Подразделения].[Подразделение].[Подразделение].Members} ON 1
         FROM
         (
@@ -72,7 +72,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
     //todo more unique
     let condString = helper.getMDXConditionString(req.body);
     query = query.replace(/\(\s*select\s*\(((.|\s)+)\)\s*on 0/igm, '(select (' + condString + ') on 0'); //todo remove reaptings - replace only group 1
-
+    //console.log(query);
     olap.getDataset(query)
         .then((result)=>{
             res.json(olap.dataset2Tableset(result.data))})
