@@ -351,7 +351,10 @@ var _getAttribute = function(node, name){
                 attr = attributes[i];
                 if (attr.nodeName === name) return attr.value;
             }
-            return 'xsd:string'; //tvv was null (error with dim properties)
+            if (attr.nodeName === 'name') {
+                return 'xsd:string'; //tvv was null (error with dim custom properties)
+            }
+            return null;
         };
     }
     return (_getAttribute = func)(node, name);
@@ -5673,12 +5676,18 @@ Xmla.Dataset.prototype = {
     _initRoot: function(doc){
         var root = _getElementsByTagNameNS(doc, _xmlnsDataset, "", "root");
         if (root.length) this._root = root[0];
-        else
+        else {
+            //tvv, needs to know what error was \/
+            var errDescription = "ERROR_PARSING_RESPONSE";
+            var errs = _getElementsByTagNameNS(doc, "urn:schemas-microsoft-com:xml-analysis:exception", "", "Error");
+            if (errs.length) errDescription = errs[0].attributes[1].value;
+            ///\
             Xmla.Exception._newError(
-                "ERROR_PARSING_RESPONSE",
+                errDescription, //tvv changed to var
                 "Xmla.Dataset._initData",
                 doc
             )._throw();
+        }
     },
     _initAxes: function(){
         var i, axis, axisNode, axisName, axisNodes, numAxisNodes, tmpAxes = {};
@@ -6464,6 +6473,9 @@ Xmla.Dataset.Axis.prototype = {
         for (i = 0; i < n; i++) {
             el = childNodes[i];
             if (el.nodeType !== 1 || (!(property = memberProperties[el.nodeName]))) continue;
+            if (property.name == '[Товары].[Товар].[Товар].[Код товара]') {
+                var i = 9;
+            }
             member[property.name] = property.converter(_getElementText(el));
         }
         return member;
@@ -6831,6 +6843,8 @@ Xmla.Dataset.Cellset.prototype = {
     },
 */
     _readCell: function(node, object){
+        if (!node) return object; //tvv if all nulls into result (but rows exist)
+
         var p, cellProp, cellProperty;
         for (p in this._cellProperties){
             cellProp = _getElementsByTagNameNS(
@@ -7275,7 +7289,7 @@ Xmla.Exception._newError = function(codeName, source, data){
     return new Xmla.Exception(
         Xmla.Exception.TYPE_ERROR,
         Xmla.Exception[codeName + "_CDE"],
-        Xmla.Exception[codeName + "_MSG"],
+        Xmla.Exception[codeName + "_MSG"] ? Xmla.Exception[codeName + "_MSG"] : codeName, //tvv, desciption of error inside
         Xmla.Exception[codeName + "_HLP"],
         source,
         data

@@ -6,14 +6,20 @@ module.exports = {
 
         if (!inputObject) return;
 
-        if (inputObject.shopFilter) {
-            condString += '{' + inputObject.shopFilter + '},';
-        }
-        if (inputObject.segmentFilter) {
-            condString += '{' + inputObject.segmentFilter + '},';
-        }
-        if (inputObject.goodFilter) {
-            condString += '{' + inputObject.goodFilter + '},';
+        if (inputObject.filterArray && inputObject.filterArray.length > 0) {
+            condString += olap.convertArrValuesToMDXTupleString(inputObject.filterArray) + ',';
+        } else {
+
+            if (inputObject.shopFilter) {
+                condString += '{' + inputObject.shopFilter + '},';
+            }
+            if (inputObject.segmentFilter) {
+                condString += '{' + inputObject.segmentFilter + '},';
+            }
+            if (inputObject.goodFilter) {
+                condString += '{' + inputObject.goodFilter + '},';
+            }
+
         }
 
         if (inputObject.dateFilter) {

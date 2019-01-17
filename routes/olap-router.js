@@ -6,6 +6,11 @@ const helper = require('./router-helper');
 
 router.post("/sales-cone", function(req , res) {
     console.log(req.body);
+    if (!req.body || req.body.size > 0) {
+        res.json("no body")
+        return;
+    }
+
     var query = "\t\t\tSELECT {[Measures].[Актуальность2], [Measures].[Чеки актуальность]} ON 0\n" +
         "\t\t\t,[ПодразделенияМин] ON 1\n" +
         "\t\t\tFROM [Чеки актуальность] where [Подразделения].[Организации].[Организация].&[31] --where [Подразделения].[Подразделения].&[227]";
@@ -22,23 +27,29 @@ router.post("/sales-cone", function(req , res) {
 
     query = `
         WITH MEMBER [КУУП] AS
-        IIF([Подразделения].[Организации].CurrentMember is [Подразделения].[Организации].[All],
-         ([Measures].[КУП], [Подразделения].[Организации].[All]),
+        IIF([Подразделения].[Подразделение].CurrentMember is [Подразделения].[Подразделение].[All],
+         ([Measures].[КУП], [Подразделения].[Подразделение].[All]),
          [Measures].[КУП])
-         member [Подразделения].[Организации].[Код] as
-         IIF(([Подразделения].[Организации].[All], [КУУП]) > 0,  [Товары].[Товары].Currentmember.Properties("Код товара"), NULL)
+         member [Подразделения].[Подразделение].[Код] as
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар].Currentmember.Properties("Код товара"), NULL)
+         member [Подразделения].[Подразделение].[Активный] as
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар].Currentmember.Properties("Активный"), NULL)
         
-         member [Подразделения].[Организации].[КУП] as
-         [Подразделения].[Организации].[All]
+         member [Подразделения].[Подразделение].[КУП] as
+         [Подразделения].[Подразделение].[All]
         
-        SELECT NON EMPTY ({[Код], [Подразделения].[Организации].[КУП], order([Подразделения].[Организации].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
-        ORDER(NONEMPTY([Товары].[Товар].[Товар].Members), [Measures].[КУП], DESC)  DIMENSION PROPERTIES PARENT_UNIQUE_NAME,HIERARCHY_UNIQUE_NAME,[Товары].[Товар].[Товар].[Код товара] ON 1
+        SELECT NON EMPTY ({[Подразделения].[Подразделение].[Активный], [Код], [Подразделения].[Подразделение].[КУП], order([Подразделения].[Подразделение].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
+        ORDER(NONEMPTY([Товары].[Товар].[Товар]), [Measures].[КУП], DESC)   ON 1
+		FROM (
+		SELECT (%cond%) ON 0
         FROM [Чеки]
+		)
         WHERE ([Measures].[КУП])
         `;
 
     let condString = helper.getMDXConditionString(req.body);
-    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
+//    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
+    query = query.replace('%cond%', condString);
 
     olap.getDataset(query)
         .then((result)=>{
@@ -83,7 +94,6 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
 router.post("/sales-cone/cell-property", function(req , res) {
     console.log(req.body);
 
-
     query = `
         WITH 
         MEMBER [Остаток] AS [Measures].[Остаток количество]
@@ -91,7 +101,7 @@ router.post("/sales-cone/cell-property", function(req , res) {
         MEMBER [Сумма продажи] AS [Measures].[Сумма]
         
         SELECT {[Цена продажи], [Сумма продажи], [Маржа %], [Остаток]} ON 0
-        ,[Товары].[Товары]  ON 1
+        ,[Товары].[Товары] ON 1
         
         FROM [Чеки]
     `;
@@ -103,12 +113,12 @@ router.post("/sales-cone/cell-property", function(req , res) {
     olap.getDataset(query)
         .then((result)=>{
             res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.send(err.exception.message)); //todo move to common error handler, without showing details in repconse, only in log file
+        .catch((err)=>res.send(err)); //todo move to common error handler, without showing details in repconse, only in log file
 });
 
 
 router.post("/dim", function(req , res) {
-    var query = "select NULL ON 0,\n" +
+    let query = "select NULL ON 0,\n" +
         req.body.dim + ".AllMembers ON 1\n" + //todo on query params
         "from [Чеки]";
 
@@ -117,5 +127,41 @@ router.post("/dim", function(req , res) {
             res.json(olap.dataset2Tableset(result.data))})
         .catch((err)=>res.json(err));
 });
+
+
+
+router.post("/dim2", function(req , res) {
+    //temp
+    if (req.body.hierarchyName == "[Товары].[Товары]") {
+        if (this.cash1) {
+            res.json(this.cash1);
+            return;
+        }
+    }
+    if (req.body.hierarchyName == "[Товары].[Производитель]") {
+        if (this.cash2) {
+            res.json(this.cash2);
+            return;
+        }
+    }
+    if (req.body.hierarchyName == "[Товары].[Поставщик]") {
+        if (this.cash3) {
+            res.json(this.cash3);
+            return;
+        }
+    }
+
+
+    olap.getDimensionAsTree(req.body)
+        .then((result)=>{
+            console.log(`get dimension ${req.body.hierarchyName}, count:${result.data.length}`)
+            if (req.body.hierarchyName == "[Товары].[Товары]") this.cash1 = result.data; //temp
+            if (req.body.hierarchyName == "[Товары].[Производитель]") this.cash2 = result.data; //temp
+            if (req.body.hierarchyName == "[Товары].[Поставщик]") this.cash3 = result.data; //temp
+            res.json(result.data)})
+        .catch((err)=>res.json(err));
+});
+
+
 
 module.exports = router;
