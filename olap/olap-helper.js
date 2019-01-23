@@ -154,12 +154,16 @@ let mdx  = {
             let rows = rows_ || [];
 
                 restrictions = {
+                    //CATALOG_NAME: 'Кубы РД',
                     CUBE_NAME: 'Чеки',
                     HIERARCHY_UNIQUE_NAME: hierarchyName,
                 };
                 if (maxLevel > 0) restrictions.LEVEL_NUMBER = i;
 
                 xmla.discoverMDMembers({
+                    properties: {
+                        Catalog: olapConfig.database
+                    },
                     restrictions,
                     error: function (xmla, request, response) {
                         console.log(request);
