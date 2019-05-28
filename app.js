@@ -50,32 +50,9 @@ if (process.env.NODE_ENV === 'production') {
 //     res.render('error');
 // });
 
-try {
-    var key = fs.readFileSync(path.join(__dirname,'encryption/private.key'));
-    var cert = fs.readFileSync(path.join(__dirname,'encryption/primary.crt'));
-    var ca = fs.readFileSync(path.join(__dirname,'encryption/intermediate.crt'));
+// var http = require('http');
+// http.createServer(app).listen(app.get('port'));
 
-    var options = {
-        key: key,
-        cert: cert,
-        ca: ca
-    };
-
-    var https = require('https');
-    console.log(`ssl port: ${parseInt(app.get('port'))+1}`);
-
-    https.createServer(options, app).listen(parseInt(app.get('port'))+1);
-
-} catch (e) {
-    console.log("ssl problem: " + e.toString())
-}
-
-
-var http = require('http');
-http.createServer(app).listen(app.get('port'));
-
-console.log(`default port: ${app.get('port')}`);
-
-// app.listen(app.get('port'), () => {
-//     console.log(`Find the server at: http://localhost:${app.get('port')}/`); // eslint-disable-line no-console
-// });
+app.listen(app.get('port'), () => {
+    console.log(`listen port: ${app.get('port')}`);
+});
