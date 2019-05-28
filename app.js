@@ -62,7 +62,7 @@ try {
     };
 
     var https = require('https');
-    https.createServer(options, app).listen(app.get('port'));
+    https.createServer(options, app).listen(app.get('port')+1);
 
 } catch (e) {
     console.log("ssl problem: " + e.toString())
@@ -70,7 +70,7 @@ try {
 
 
 var http = require('http');
-http.createServer(app).listen(app.get('port')-1);
+http.createServer(app).listen(app.get('port'));
 
 // app.listen(app.get('port'), () => {
 //     console.log(`Find the server at: http://localhost:${app.get('port')}/`); // eslint-disable-line no-console
