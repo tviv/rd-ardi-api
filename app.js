@@ -62,7 +62,9 @@ try {
     };
 
     var https = require('https');
-    https.createServer(options, app).listen(app.get('port')+1);
+    console.log(`ssl port: ${parseInt(app.get('port'))+1}`);
+
+    https.createServer(options, app).listen(parseInt(app.get('port'))+1);
 
 } catch (e) {
     console.log("ssl problem: " + e.toString())
