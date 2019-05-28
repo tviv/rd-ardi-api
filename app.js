@@ -1,13 +1,14 @@
 'use strict'
 
 const express = require('express');
+const fs = require('fs');
 const bodyParser = require('body-parser');
 
 const dwRouter = require('./routes/dw-router');
 const olapRouter = require('./routes/olap-router');
 const path = require('path');
 
-var cors = require('cors')
+var cors = require('cors');
 
 const app = express();
 // Body Parser Middleware
@@ -34,9 +35,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 //catch 404 and forward to error handler
-app.use(function(req, res, next) {
-    next(createError(404));
-});
+// app.use(function(req, res, next) {
+//     next(createError(404));
+// });
 
 // error handler
 // app.use(function(err, req, res, next) {
@@ -49,9 +50,28 @@ app.use(function(req, res, next) {
 //     res.render('error');
 // });
 
+try {
+    var key = fs.readFileSync('encryption/private.key');
+    var cert = fs.readFileSync('encryption/primary.crt');
+    var ca = fs.readFileSync('encryption/intermediate.crt');
+
+    var options = {
+        key: key,
+        cert: cert,
+        ca: ca
+    };
+
+    var https = require('https');
+    https.createServer(options, app).listen(443);
+
+} catch (e) {
+    console.log("ssl problem: " + e.toString())
+}
 
 
+var http = require('http');
+http.createServer(app).listen(app.get('port'));
 
-app.listen(app.get('port'), () => {
-    console.log(`Find the server at: http://localhost:${app.get('port')}/`); // eslint-disable-line no-console
-});
+// app.listen(app.get('port'), () => {
+//     console.log(`Find the server at: http://localhost:${app.get('port')}/`); // eslint-disable-line no-console
+// });

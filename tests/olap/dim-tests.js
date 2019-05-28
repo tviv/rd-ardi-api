@@ -16,7 +16,7 @@ describe('olap-get_dim', function() {
     });
 
     it('getting dimention2', async () => {
-        const result = await olap.getDimension('[Категории].[Категории]', 2);
+        const result = await olap.getDimension('[Признаки товара].[Категории]', 2);
         console.dir(result.data);
         console.log(result.data.length);
         expect(result.data.length).to.be.above(70);
