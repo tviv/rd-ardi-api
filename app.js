@@ -51,9 +51,9 @@ if (process.env.NODE_ENV === 'production') {
 // });
 
 try {
-    var key = fs.readFileSync('encryption/private.key');
-    var cert = fs.readFileSync('encryption/primary.crt');
-    var ca = fs.readFileSync('encryption/intermediate.crt');
+    var key = fs.readFileSync(path.join(__dirname,'encryption/private.key'));
+    var cert = fs.readFileSync(path.join(__dirname,'encryption/primary.crt'));
+    var ca = fs.readFileSync(path.join(__dirname,'encryption/intermediate.crt'));
 
     var options = {
         key: key,
