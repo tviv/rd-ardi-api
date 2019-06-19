@@ -31,15 +31,15 @@ router.post("/sales-cone", function(req , res) {
          ([Measures].[КУП], [Подразделения].[Подразделение].[All]),
          [Measures].[КУП])
          member [Подразделения].[Подразделение].[Код] as
-         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар].Currentmember.Properties("Код товара"), NULL)
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар ключ].Currentmember.Properties("Код товара"), NULL)
          member [Подразделения].[Подразделение].[Активный] as
-         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар].Currentmember.Properties("Активный"), NULL)
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) > 0,  [Товары].[Товар ключ].Currentmember.Properties("Активный"), NULL)
         
          member [Подразделения].[Подразделение].[КУП] as
          [Подразделения].[Подразделение].[All]
         
         SELECT NON EMPTY ({[Подразделения].[Подразделение].[Активный], [Код], [Подразделения].[Подразделение].[КУП], order([Подразделения].[Подразделение].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
-        ORDER(NONEMPTY([Товары].[Товар].[Товар]), [Measures].[КУП], DESC)   ON 1
+        ORDER(NONEMPTY([Товары].[Товар ключ].[Товар ключ]), [Measures].[КУП], DESC)   ON 1
 		FROM (
 		SELECT (%cond%) ON 0
         FROM [Чеки]
@@ -161,6 +161,33 @@ router.post("/dim2", function(req , res) {
             res.json(result.data)})
         .catch((err)=>res.json(err));
 });
+
+
+//todo move from here
+router.post("/daily-revenue", function(req , res) {
+    console.log(req.body);
+    if (!req.body || req.body.size > 0) {
+        res.json("no body")
+        return;
+    }
+
+    let query = `
+        SELECT {[Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС],[Measures].[Средняя сумма],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости],[Measures].[Сумма],[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству],[Measures].[Накопительная выручка за месяц],[Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам],[Measures].[Кол сертификатов],[Measures].[Сумма сертификатов]} ON COLUMNS 
+        , NON EMPTY [Даты].[Дата].[Дата] ON ROWS  
+        FROM [Ежедневный отчет] 
+        WHERE (%cond%) 
+        `;
+
+    let condString = helper.getMDXConditionString(req.body);
+//    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
+    query = query.replace('%cond%', condString);
+
+    olap.getDataset(query)
+        .then((result)=>{
+            res.json(olap.dataset2Tableset(result.data))})
+        .catch((err)=>res.json(err));
+});
+
 
 
 

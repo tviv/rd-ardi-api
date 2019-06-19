@@ -29,6 +29,18 @@ describe('olap-get_dim', function() {
         expect(result.data.length).to.be.above(70);
     });
 
+    it('getting dimention [Даты].[Месяцы]', async () => {
+        const result = await olap.getDimension('[Даты].[Месяцы]');
+        console.dir(result.data);
+        console.log(result.data.length);
+        expect(result.data.length).to.be.above(70);
+    });
+
+    it ('get member key from unic name', () => {
+        const result = olap.getMemberKeyFromUnicName('[Даты].[Месяцы].[Дата].&[2016-08-01T00:00:00]');
+        expect(result).to.be.equal('2016-08-01T00:00:00');
+    });
+
     let data = [
         //{MEMBER_UNIQUE_NAME: 0, PARENT_UNIQUE_NAME:  null },
         {MEMBER_CAPTION: '1', MEMBER_UNIQUE_NAME: 1, PARENT_UNIQUE_NAME:  0 },
@@ -72,8 +84,8 @@ describe('olap-get_dim', function() {
     it('creating tree 2', async () => {
 
         let tree = olap.getTree(data2);
-        console.dir(tree);
-        expect(tree.length).to.equal(2);
+        //console.dir(tree);
+        expect(tree.length).to.equal(1);
 
     });
 
@@ -88,6 +100,16 @@ describe('olap-get_dim', function() {
 
     it('getting dimention as tree 2', async () => {
         const result = await olap.getDimensionAsTree({hierarchyName: '[Товары].[Товары]', maxLevel:2});
+        //console.dir(result.data);
+        console.log(result.data.length);
+        expect(result.data.length).to.be.gt(0);
+        expect(result.data.length).to.be.lt(2);
+
+    });
+
+
+    it('getting dimention as tree [Даты].[Месяцы]', async () => {
+        const result = await olap.getDimensionAsTree({hierarchyName: '[Даты].[Месяцы]', maxLevel:2});
         //console.dir(result.data);
         console.log(result.data.length);
         expect(result.data.length).to.be.gt(0);

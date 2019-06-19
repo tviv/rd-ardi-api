@@ -36,7 +36,7 @@ let mdx  = {
 
                 },
                 error: function(xmla, request, response){
-                    console.log(response);
+                    //console.log(response);
                     reject({error: response.message});
                 },
                 success: function(xmla, request, response){
@@ -147,6 +147,16 @@ let mdx  = {
         return result;
     },
 
+    getMemberKeyFromUnicName(value) {
+        const regex = /\&\[(.*)\]/g;
+        let match = regex.exec(value);
+        if (match !== null) {
+            return match[1];
+        } else {
+            return null;
+        }
+    },
+
     getDimension: (hierarchyName, maxLevel = 0, rows_, i = 0) => {
         let xmla = mdx.getXmla();
 
@@ -171,6 +181,7 @@ let mdx  = {
                     },
                     success: function (xmla, request, response) {
                         response.eachRow(function (row) {
+                            row['MEMBER_KEY'] = mdx.getMemberKeyFromUnicName(row["MEMBER_UNIQUE_NAME"]) || row['MEMBER_KEY'];
                             rows.push(row);
                             // console.log(
                             //     row["LEVEL_NUMBER"], row["MEMBER_UNIQUE_NAME"], row["MEMBER_NAME"], row["PARENT_UNIQUE_NAME"]
