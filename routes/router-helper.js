@@ -36,7 +36,7 @@ module.exports = {
             condString +=  '{' + dates.periodString + '},';
         }
 
-        condString = condString.replace(/\{\},/,'').replace(/,$/, '');
+        condString = condString.replace(/\{\},/g,'').replace(/,$/g, '');
         
         return condString
     }

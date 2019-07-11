@@ -36,7 +36,7 @@ let mdx  = {
 
                 },
                 error: function(xmla, request, response){
-                    //console.log(response);
+                    console.log(response.message, response.data.request.data);
                     reject({error: response.message});
                 },
                 success: function(xmla, request, response){
@@ -176,7 +176,7 @@ let mdx  = {
                     },
                     restrictions,
                     error: function (xmla, request, response) {
-                        console.log(request);
+                        console.log(response.message, response.data.request.data);
                         reject(request);
                     },
                     success: function (xmla, request, response) {
