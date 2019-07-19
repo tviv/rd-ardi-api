@@ -4,10 +4,11 @@ const olap = require('../olap/olap-helper');
 const helper = require('./router-helper');
 
 
+
 router.post("/sales-cone", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
-        res.json("no body")
+        res.json("no body");
         return;
     }
 
@@ -117,7 +118,7 @@ router.post("/sales-cone/cell-property", function(req , res) {
 });
 
 
-router.post("/dim", function(req , res) {
+router.post("/dimOLD", function(req , res) {
     let query = "select NULL ON 0,\n" +
         req.body.dim + ".AllMembers ON 1\n" + //todo on query params
         "from [Чеки]";
@@ -130,51 +131,31 @@ router.post("/dim", function(req , res) {
 
 
 
-router.post("/dim2", function(req , res) {
-    //temp
-    if (req.body.hierarchyName == "[Товары].[Товары]") {
-        if (this.cash1) {
-            res.json(this.cash1);
-            return;
-        }
-    }
-    if (req.body.hierarchyName == "[Товары].[Производитель]") {
-        if (this.cash2) {
-            res.json(this.cash2);
-            return;
-        }
-    }
-    if (req.body.hierarchyName == "[Товары].[Поставщик]") {
-        if (this.cash3) {
-            res.json(this.cash3);
-            return;
-        }
-    }
+router.post("/dim", function(req , res) {
 
 
-    olap.getDimensionAsTree(req.body)
+    olap.getDimensionAsTreeWithCash(req.body)
         .then((result)=>{
-            console.log(`get dimension ${req.body.hierarchyName}, count:${result.data.length}`)
-            if (req.body.hierarchyName == "[Товары].[Товары]") this.cash1 = result.data; //temp
-            if (req.body.hierarchyName == "[Товары].[Производитель]") this.cash2 = result.data; //temp
-            if (req.body.hierarchyName == "[Товары].[Поставщик]") this.cash3 = result.data; //temp
-            res.json(result.data)})
+            res.json(result)})
         .catch((err)=>res.json(err));
 });
 
 
+
+
 //todo move from here
+const dailyRevenueFields = '{[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС],[Measures].[Средняя сумма],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости],[Measures].[Сумма],[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству],[Measures].[Накопительная выручка за месяц],[Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам],[Measures].[Кол сертификатов],[Measures].[Сумма сертификатов]}';
 router.post("/daily-revenue", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
-        res.json("no body")
+        res.json("no body");
         return;
     }
 
     let query = `
-        SELECT {[Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС],[Measures].[Средняя сумма],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости],[Measures].[Сумма],[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству],[Measures].[Накопительная выручка за месяц],[Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам],[Measures].[Кол сертификатов],[Measures].[Сумма сертификатов]} ON COLUMNS 
+        SELECT ${dailyRevenueFields} ON COLUMNS 
         , NON EMPTY [Даты].[Дата].[Дата] ON ROWS  
-        FROM [Ежедневный отчет] 
+        FROM [Чеки] 
         WHERE (%cond%) 
         `;
 
@@ -188,6 +169,31 @@ router.post("/daily-revenue", function(req , res) {
         .catch((err)=>res.json(err));
 });
 
+
+router.post("/daily-revenue-day-shop", function(req , res) {
+    console.log(req.body);
+    if (!req.body || req.body.size > 0) {
+        res.json("no body");
+        return;
+    }
+
+    let query = `
+        SELECT ${dailyRevenueFields} ON COLUMNS 
+        , NON EMPTY [Подразделения].[Подразделение].[Подразделение] ON ROWS  
+        FROM [Чеки] 
+        WHERE (%cond%) 
+        `;
+
+    let condString = helper.getMDXConditionString(req.body);
+    condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты].[Подразделение]');
+//    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
+    query = query.replace('%cond%', condString);
+
+    olap.getDataset(query)
+        .then((result)=>{
+            res.json(olap.dataset2Tableset(result.data))})
+        .catch((err)=>res.json(err));
+});
 
 
 

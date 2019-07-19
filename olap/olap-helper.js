@@ -2,10 +2,23 @@ const xmla4js = require("./lib/Xmla");
 const moment = require('moment');
 const {olapConfig} = require('../config');
 
+const NodeCache = require('node-cache');
+const dimCash = new NodeCache({stdTTL: 7200, checkperiod: 300});
+
 const F_NAME    = 'MEMBER_CAPTION';
 const F_UNAME   = 'MEMBER_UNIQUE_NAME';
 const F_PUNAME  = 'PARENT_UNIQUE_NAME';
 const F_KEY     = 'MEMBER_KEY';
+
+dimCash.on( "expired", function( key, value ){
+    console.log(`cash ${key} expired`);
+    mdx.getDimensionAsTreeWithCash(value.options).then()
+        .catch((e) => console.log(`cash update error: ${key}`));
+});
+
+dimCash.on( "del", function( key, value ){
+    console.log(`cash ${key} deleted`);
+});
 
 let mdx  = {
 
@@ -36,7 +49,12 @@ let mdx  = {
 
                 },
                 error: function(xmla, request, response){
-                    console.log(response.message, response.data.request.data);
+                    console.log(response.message);
+                    try {
+                        console.log(response.data.request);
+                    } catch (e) {
+
+                    }
                     reject({error: response.message});
                 },
                 success: function(xmla, request, response){
@@ -176,7 +194,12 @@ let mdx  = {
                     },
                     restrictions,
                     error: function (xmla, request, response) {
-                        console.log(response.message, response.data.request.data);
+                        console.log(response.message);
+                        try {
+                            console.log(response);
+                        } catch (e) {
+
+                        }
                         reject(request);
                     },
                     success: function (xmla, request, response) {
@@ -208,6 +231,7 @@ let mdx  = {
         let tree = [];
 
         let firstFound = false;
+        //for(let i = data.length - 1; i >= start; i--) {
         for(let i = start; i < data.length; i++) {
             if (data[i][F_PUNAME] === pKey) {
                 firstFound = true;
@@ -246,10 +270,28 @@ let mdx  = {
         });
     },
 
+    getDimensionAsTreeWithCash: (options) => {
+        return new Promise((resolve, reject) => {
+            let cashValue = dimCash.get(options.hierarchyName);
+            console.log(`ttl for ${options.hierarchyName} is ${dimCash.getTtl(options.hierarchyName)}`);
+            if (cashValue !== undefined) {
+                resolve(cashValue.data);
+            } else
+                mdx.getDimensionAsTree(options).then((res) => {
+                        console.log(`get dimension ${options.hierarchyName}, count:${res.data.length}`);
+                        dimCash.set(options.hierarchyName, {data: res.data, options: options});
+                        resolve(res.data);
+                }).catch((e) => reject({error: e}));
+        });
+    },
+
     convertArrValuesToMDXTupleString: function(values) {
         if (!(values instanceof Array)) return null;
 
-        arr = values.map(x=>this.convertValuesToMDXTupleString(x[0], x[1]));
+        arr = values.map(x=> {
+            if (typeof x === 'string') x = this.convertMDXHierarchyElementToArrValues(x);
+            return this.convertValuesToMDXTupleString(x[0], x[1])
+        });
         return arr.join(',');
     },
 
@@ -258,6 +300,17 @@ let mdx  = {
 
         let result = `{${values.map(x=>`${hierarchyName}.${(x == '0' ? '[All]' : `&[${x}]`)}`).join(',')}}`;
         return result;
+    },
+
+    convertMDXHierarchyElementToArrValues: function (value) {
+        if (typeof value !== 'string') return null;
+        let res = [];
+        let strings = value.split('.&');
+        res.push(strings[0]);
+        res.push([]);
+        res[1].push(strings[1].replace(/^\[/g, '').replace(/\]$/g, ''));
+
+        return res;
     }
 };
 
