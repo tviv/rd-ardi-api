@@ -34,6 +34,7 @@ router.get('/api/settings', (req, res) => {
     (async function () {
         let pool = undefined;
         try {
+            await sql.close();
             pool = await sql.connect(dwConfig);
             let result = await pool.request()
             //.input('input_parameter', sql.Int, value)

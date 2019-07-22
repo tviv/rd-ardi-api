@@ -43,45 +43,63 @@ describe('olap-get_dim', function() {
 
     let data = [
         //{MEMBER_UNIQUE_NAME: 0, PARENT_UNIQUE_NAME:  null },
-        {MEMBER_CAPTION: '1', MEMBER_UNIQUE_NAME: 1, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '2', MEMBER_UNIQUE_NAME: 2, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.1', MEMBER_UNIQUE_NAME: 1.1, PARENT_UNIQUE_NAME:  1 },
-        {MEMBER_CAPTION: '1.2', MEMBER_UNIQUE_NAME: 1.2, PARENT_UNIQUE_NAME:  1 },
-        {MEMBER_CAPTION: '1.3', MEMBER_UNIQUE_NAME: 1.3, PARENT_UNIQUE_NAME:  1 },
-        {MEMBER_CAPTION: '1.4', MEMBER_UNIQUE_NAME: 1.4, PARENT_UNIQUE_NAME:  1 },
-        {MEMBER_CAPTION: '2.1', MEMBER_UNIQUE_NAME: 2.1, PARENT_UNIQUE_NAME:  2 },
-        {MEMBER_CAPTION: '2.2', MEMBER_UNIQUE_NAME: 2.2, PARENT_UNIQUE_NAME:  2 },
-        {MEMBER_CAPTION: '2.3', MEMBER_UNIQUE_NAME: 2.3, PARENT_UNIQUE_NAME:  2 },
-        {MEMBER_CAPTION: '1.2.1', MEMBER_UNIQUE_NAME: 1.21, PARENT_UNIQUE_NAME: 1.2  },
-        {MEMBER_CAPTION: '1.2.2', MEMBER_UNIQUE_NAME: 1.22, PARENT_UNIQUE_NAME: 1.2  },
+        {MEMBER_CAPTION: '1', MEMBER_UNIQUE_NAME: 1,         MEMBER_KEY: '1',         PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '2', MEMBER_UNIQUE_NAME: 2,         MEMBER_KEY: 2,           PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.1', MEMBER_UNIQUE_NAME: 1.1,      MEMBER_KEY: '1.1',      PARENT_UNIQUE_NAME:  1 },
+        {MEMBER_CAPTION: '1.2', MEMBER_UNIQUE_NAME: 1.2,      MEMBER_KEY: 1.2,        PARENT_UNIQUE_NAME:  1 },
+        {MEMBER_CAPTION: '1.3', MEMBER_UNIQUE_NAME: 1.3,      MEMBER_KEY: 1.3,        PARENT_UNIQUE_NAME:  1 },
+        {MEMBER_CAPTION: '1.4', MEMBER_UNIQUE_NAME: 1.4,      MEMBER_KEY: 1.3,        PARENT_UNIQUE_NAME:  1 },
+        {MEMBER_CAPTION: '2.1', MEMBER_UNIQUE_NAME: 2.1,      MEMBER_KEY: 2.1,        PARENT_UNIQUE_NAME:  2 },
+        {MEMBER_CAPTION: '2.2', MEMBER_UNIQUE_NAME: 2.2,      MEMBER_KEY: 2.2,        PARENT_UNIQUE_NAME:  2 },
+        {MEMBER_CAPTION: '2.3', MEMBER_UNIQUE_NAME: 2.3,      MEMBER_KEY: 2.3,        PARENT_UNIQUE_NAME:  2 },
+        {MEMBER_CAPTION: '1.2.1', MEMBER_UNIQUE_NAME: 1.21,   MEMBER_KEY: 1.21,       PARENT_UNIQUE_NAME: 1.2  },
+        {MEMBER_CAPTION: '1.2.2', MEMBER_UNIQUE_NAME: 1.22,   MEMBER_KEY: 1.22,       PARENT_UNIQUE_NAME: 1.2  },
     ];
 
     let data2 = [
-        {MEMBER_CAPTION: 'All', MEMBER_UNIQUE_NAME: 0, PARENT_UNIQUE_NAME:  null },
-        {MEMBER_CAPTION: '10', MEMBER_UNIQUE_NAME: 1, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.1', MEMBER_UNIQUE_NAME: 1.1, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.2', MEMBER_UNIQUE_NAME: 1.2, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.3', MEMBER_UNIQUE_NAME: 1.3, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.4', MEMBER_UNIQUE_NAME: 1.4, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '1.2.1', MEMBER_UNIQUE_NAME: 1.21, PARENT_UNIQUE_NAME: 0  },
-        {MEMBER_CAPTION: '1.2.2', MEMBER_UNIQUE_NAME: 1.22, PARENT_UNIQUE_NAME: 0  },
-        {MEMBER_CAPTION: '20', MEMBER_UNIQUE_NAME: 2, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '2.1', MEMBER_UNIQUE_NAME: 2.1, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '2.2', MEMBER_UNIQUE_NAME: 2.2, PARENT_UNIQUE_NAME:  0 },
-        {MEMBER_CAPTION: '2.3', MEMBER_UNIQUE_NAME: 2.3, PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: 'All', MEMBER_UNIQUE_NAME: 0,        MEMBER_KEY: '0',           PARENT_UNIQUE_NAME:  null },
+        {MEMBER_CAPTION: '10', MEMBER_UNIQUE_NAME: 1,         MEMBER_KEY: '1',           PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.1', MEMBER_UNIQUE_NAME: 1.1,      MEMBER_KEY: '1.1',        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.2', MEMBER_UNIQUE_NAME: 1.2,      MEMBER_KEY: 1.2,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.3', MEMBER_UNIQUE_NAME: 1.3,      MEMBER_KEY: 1.3,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.4', MEMBER_UNIQUE_NAME: 1.4,      MEMBER_KEY: 1.3,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '1.2.1', MEMBER_UNIQUE_NAME: 1.21,   MEMBER_KEY: 1.21,     PARENT_UNIQUE_NAME: 0  },
+        {MEMBER_CAPTION: '1.2.2', MEMBER_UNIQUE_NAME: 1.22,   MEMBER_KEY: 1.22,     PARENT_UNIQUE_NAME: 0  },
+        {MEMBER_CAPTION: '20', MEMBER_UNIQUE_NAME: 2,         MEMBER_KEY: 2,           PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '2.1', MEMBER_UNIQUE_NAME: 2.1,      MEMBER_KEY: 2.1,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '2.2', MEMBER_UNIQUE_NAME: 2.2,      MEMBER_KEY: 2.2,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: '2.3', MEMBER_UNIQUE_NAME: 2.3,      MEMBER_KEY: 2.3,        PARENT_UNIQUE_NAME:  0 },
+        {MEMBER_CAPTION: 'Unknown', MEMBER_UNIQUE_NAME: null, MEMBER_KEY: null,       PARENT_UNIQUE_NAME:  0 },
     ];
 
 
-    it('creating tree', async () => {
+    it('creating tree - short format', async () => {
         let tree = olap.getTree(data);
         console.dir(tree);
         expect(tree.length).to.equal(2);
+        expect(typeof tree[0].value ==='string').to.equal(true);
 
     });
 
+    it('creating tree - detail format', async () => {
+        let tree = olap.getTree(data, {shortFormat: false});
+        console.dir(tree);
+        expect(tree.length).to.equal(2);
+        expect(typeof tree[0].value ==='object').to.equal(true);
+        expect(tree[0].value.MEMBER_CAPTION).to.equal('1');
 
+    });
 
-    it('creating tree 2', async () => {
+    it('creating tree - reverse', async () => {
+        let tree = olap.getTree(data, {shortFormat: false, reverse: true});
+        console.dir(tree);
+        expect(tree.length).to.equal(2);
+        expect(typeof tree[0].value ==='object').to.equal(true);
+        expect(tree[0].value.MEMBER_CAPTION).to.equal('2');
+
+    });
+
+    it('creating tree - more to olap format', async () => {
 
         let tree = olap.getTree(data2);
         //console.dir(tree);
@@ -107,13 +125,17 @@ describe('olap-get_dim', function() {
 
     });
 
-
     it('getting dimention as tree [Даты].[Месяцы]', async () => {
         const result = await olap.getDimensionAsTree({hierarchyName: '[Даты].[Месяцы]', maxLevel:2});
-        //console.dir(result.data);
-        console.log(result.data.length);
-        expect(result.data.length).to.be.gt(0);
-        expect(result.data.length).to.be.lt(2);
+        console.dir(result.data);
+        expect(parseInt(result.data[0].children[0].value)).to.be.lt(parseInt(result.data[0].children[1].value));
+
+    });
+
+    it('getting dimention as tree [Даты].[Месяцы] - revers', async () => {
+        const result = await olap.getDimensionAsTree({hierarchyName: '[Даты].[Месяцы]', maxLevel:2, reverse:true});
+        console.dir(result.data);
+        expect(parseInt(result.data[0].children[0].value)).to.be.gt(parseInt(result.data[0].children[1].value));
 
     });
 

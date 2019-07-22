@@ -3,7 +3,7 @@ const moment = require('moment');
 const {olapConfig} = require('../config');
 
 const NodeCache = require('node-cache');
-const dimCash = new NodeCache({stdTTL: 7200, checkperiod: 300});
+const dimCash = new NodeCache({stdTTL: 100000, checkperiod: 300});
 
 const F_NAME    = 'MEMBER_CAPTION';
 const F_UNAME   = 'MEMBER_UNIQUE_NAME';
@@ -12,8 +12,8 @@ const F_KEY     = 'MEMBER_KEY';
 
 dimCash.on( "expired", function( key, value ){
     console.log(`cash ${key} expired`);
-    mdx.getDimensionAsTreeWithCash(value.options).then()
-        .catch((e) => console.log(`cash update error: ${key}`));
+    // mdx.getDimensionAsTreeWithCash(value.options).then()
+    //     .catch((e) => console.log(`cash update error: ${key}`));
 });
 
 dimCash.on( "del", function( key, value ){
@@ -196,7 +196,7 @@ let mdx  = {
                     error: function (xmla, request, response) {
                         console.log(response.message);
                         try {
-                            console.log(response);
+                            console.log(response.data.request);
                         } catch (e) {
 
                         }
@@ -225,24 +225,27 @@ let mdx  = {
     },
 
 
-    getTree: (data, isShortFormat = true, pKey_ = null, start = 0) => {
+    getTree: (data, options={}, pKey_ = null, start = 0) => {
+        let {shortFormat, reverse} = options;
+        if (shortFormat === undefined) shortFormat = true;
+        if (reverse === undefined) reverse = false;
         if (data == null || data.length == 0) return null;
         let pKey = pKey_ !== null ? pKey_ : data[0][F_PUNAME];
         let tree = [];
 
         let firstFound = false;
-        //for(let i = data.length - 1; i >= start; i--) {
-        for(let i = start; i < data.length; i++) {
+        for(let i = !reverse?start:data.length-1 ; !reverse?i < data.length:i >= start ; !reverse?i++:i--) {
             if (data[i][F_PUNAME] === pKey) {
                 firstFound = true;
                 if (data[i][F_NAME] == null) {
                     //console.log(data[i]);
                     continue;
                 }
-                let e = {label: data[i][F_NAME], value: (isShortFormat ? data[i][F_KEY] : data[i]) || ''};
-                tree.push(e);
+                let e = {label: data[i][F_NAME], value: (shortFormat ? data[i][F_KEY] : data[i]) || ''};
+                if (e.value !== '') //Unknown
+                    tree.push(e);
 
-                children = mdx.getTree(data, isShortFormat, data[i][F_UNAME], i);
+                children = mdx.getTree(data, options, data[i][F_UNAME], i);
                 if (children.length > 0) e.children = children;
                 if (data[i][F_PUNAME] === null) {e.isAll = true}
             } else if (firstFound) {
@@ -263,7 +266,7 @@ let mdx  = {
                 if (res.error != null) {
                     resolve(res);
                 } else {
-                    resolve({error: null, data: mdx.getTree(res.data, options.isShortFormat)});
+                    resolve({error: null, data: mdx.getTree(res.data, options)});
                 }
             }).catch((e) => reject({error: e}));
 
