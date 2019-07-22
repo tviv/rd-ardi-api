@@ -51,7 +51,7 @@ let mdx  = {
                 error: function(xmla, request, response){
                     console.log(response.message);
                     try {
-                        console.log(response.data.request);
+                        console.log(response.data.request.data);
                     } catch (e) {
 
                     }
@@ -182,8 +182,7 @@ let mdx  = {
             let rows = rows_ || [];
 
                 restrictions = {
-                    //CATALOG_NAME: 'Кубы РД',
-                    CUBE_NAME: 'Чеки',
+                    CUBE_NAME: olapConfig.cubeName,
                     HIERARCHY_UNIQUE_NAME: hierarchyName,
                 };
                 if (maxLevel > 0) restrictions.LEVEL_NUMBER = i;
@@ -196,7 +195,7 @@ let mdx  = {
                     error: function (xmla, request, response) {
                         console.log(response.message);
                         try {
-                            console.log(response.data.request);
+                            console.log(response.data.request.data);
                         } catch (e) {
 
                         }
