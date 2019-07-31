@@ -24,6 +24,9 @@ const config = {
         isGettingOnlyFullWeeks: true,
         cubeName: 'Чеки'
     },
+    authConfig: {
+        secret: 'sds808sDSFDS33'
+    }
 };
 
 module.exports = config;

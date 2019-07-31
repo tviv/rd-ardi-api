@@ -1,6 +1,7 @@
 const olap = require('../olap/olap-helper');
+const auth = require('../utils/auth');
 
-module.exports = {
+const rh = {
     getMDXConditionString: function (inputObject) {
         let condString = '';
 
@@ -39,5 +40,47 @@ module.exports = {
         condString = condString.replace(/\{\},/g,'').replace(/,$/g, '');
         
         return condString
+    },
+
+    handleMdxQueryWithAuth(query, req, res) {
+        auth.withAuth(req, res)(olap.getDataset, query)
+            .then((result)=>{
+                res.json(olap.dataset2Tableset(result.data))})
+            .catch((err)=>{
+                if (err && err.status) {
+                    res.statusCode = err.status
+                }
+                res.json(err)
+            });
     }
-}
+
+    // getDataSetWithAuth: function (query, req, res) {
+    //     let result = auth.getCredentinal(req);
+    //
+    //     if(!result) {
+    //
+    //         res.statusCode = 401;
+    //         res.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"');
+    //         res.end('<html><body>Need some creds son</body></html>');
+    //     }
+    //
+    //     else {
+    //
+    //         const {username, password} = result;
+    //
+    //         if(username  && password) {   // Is the username/password correct?
+    //             return olap.getDataset(query, username, password)
+    //         } else {
+    //             res.status(status).send({
+    //                 success: false,
+    //                 message: 'empty cred data'
+    //             });
+    //         }
+    //     }
+    // },
+
+
+
+};
+
+module.exports = rh;

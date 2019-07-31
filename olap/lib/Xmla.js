@@ -101,7 +101,7 @@ if (typeof(require)==="function") _createXhr = function(){
             }
             options.method = "POST";//method;
             options.headers = {};
-            if (username) options.headers.Authorization = "Basic " + (new Buffer(username + ":" + (password || ""))).toString("base64");
+            if (username) options.headers.Authorization = "Basic " + (Buffer.from(username + ":" + (password || ""))).toString("base64");
             this.options = options;
             this.changeStatus(-1, 1);
         },

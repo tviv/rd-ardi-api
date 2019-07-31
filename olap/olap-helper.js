@@ -4,6 +4,7 @@ const {olapConfig} = require('../config');
 
 const NodeCache = require('node-cache');
 const dimCash = new NodeCache({stdTTL: 100000, checkperiod: 300});
+const OLAP_TIMEOUT = 5000; //very big - becouse olap itself has execution timeout
 
 const F_NAME    = 'MEMBER_CAPTION';
 const F_UNAME   = 'MEMBER_UNIQUE_NAME';
@@ -36,7 +37,7 @@ let mdx  = {
     getDataset: function (query, user, password) {
         console.log(query);
         return new Promise((resolve, reject) => {
-            xmla = this.getXmla(user, password);
+            xmla = mdx.getXmla(user, password);
 
             xmla.execute({
 
@@ -51,11 +52,12 @@ let mdx  = {
                 error: function(xmla, request, response){
                     console.log(response.message);
                     try {
-                        console.log(response.data.request.data);
+                        console.log('status:', response.data.status);
+                        console.log('command:', response.data.request.data);
                     } catch (e) {
 
                     }
-                    reject({error: response.message});
+                    reject({message: response.message, status: response.data.status});
                 },
                 success: function(xmla, request, response){
                     if ([...Array(request.dataset.axisCount())].reduce((total, x, i) => total + request.dataset.getAxis(i).numTuples, 0) === 0) {
@@ -310,7 +312,7 @@ let mdx  = {
         let strings = value.split('.&');
         res.push(strings[0]);
         res.push([]);
-        res[1].push(strings[1].replace(/^\[/g, '').replace(/\]$/g, ''));
+        strings[1] && res[1].push(strings[1].replace(/^\[/g, '').replace(/\]$/g, ''));
 
         return res;
     }

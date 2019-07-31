@@ -12,6 +12,10 @@ router.post("/sales-cone", function(req , res) {
         return;
     }
 
+    // res.statusCode = 401;
+    // res.json("");
+    // return;
+
     var query = "\t\t\tSELECT {[Measures].[Актуальность2], [Measures].[Чеки актуальность]} ON 0\n" +
         "\t\t\t,[ПодразделенияМин] ON 1\n" +
         "\t\t\tFROM [Чеки актуальность] where [Подразделения].[Организации].[Организация].&[31] --where [Подразделения].[Подразделения].&[227]";
@@ -52,10 +56,7 @@ router.post("/sales-cone", function(req , res) {
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
 
-    olap.getDataset(query)
-        .then((result)=>{
-            res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.json(err));
+    helper.handleMdxQueryWithAuth(query, req, res);
 });
 
 
@@ -88,7 +89,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
     olap.getDataset(query)
         .then((result)=>{
             res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.send(err.exception.message)); //todo move to common error handler, without showing details in repconse, only in log file
+        .catch((err)=>res.send(err.exception && err.exception.message)); //todo move to common error handler, without showing details in repconse, only in log file
 });
 
 
@@ -117,22 +118,7 @@ router.post("/sales-cone/cell-property", function(req , res) {
         .catch((err)=>res.send(err)); //todo move to common error handler, without showing details in repconse, only in log file
 });
 
-
-router.post("/dimOLD", function(req , res) {
-    let query = "select NULL ON 0,\n" +
-        req.body.dim + ".AllMembers ON 1\n" + //todo on query params
-        "from [Чеки]";
-
-    olap.getDataset(query)
-        .then((result)=>{
-            res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.json(err));
-});
-
-
-
 router.post("/dim", function(req , res) {
-
 
     olap.getDimensionAsTreeWithCash(req.body)
         .then((result)=>{
@@ -145,11 +131,12 @@ router.post("/dim", function(req , res) {
 
 //todo move from here
 const dailyRevenueFields =
-    `{[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС],[Measures].[Средняя сумма],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости],
-    [Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству],[Measures].[Накопительно безнал за месяц],
-    [Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам],
-    [Measures].[Кол сертификатов],[Measures].[Сумма сертификатов], 
-    [Сумма Спасибо от Сбербанка], [Средняя сумма чека со Спасибо от Сбербанка], [Доля оплат бонусами СБ в ТО с НДС], [Начислено Спасибо от Сбербанка], [Средняя сумма чека с Начислено Спасибо от Сбербанка]}`;
+    `{[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС],[Measures].[Средняя сумма],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости]
+    ,[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству],[Measures].[Накопительно безнал за месяц]
+    ,[Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам]
+    ,[Measures].[Кол сертификатов],[Measures].[Сумма сертификатов]
+    --,[Сумма Спасибо от Сбербанка], [Средняя сумма чека со Спасибо от Сбербанка], [Доля оплат бонусами СБ в ТО с НДС], [Начислено Спасибо от Сбербанка], [Средняя сумма чека с Начислено Спасибо от Сбербанка]
+    }`;
 router.post("/daily-revenue", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
@@ -168,10 +155,7 @@ router.post("/daily-revenue", function(req , res) {
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
 
-    olap.getDataset(query)
-        .then((result)=>{
-            res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.json(err));
+    helper.handleMdxQueryWithAuth(query, req, res);
 });
 
 
@@ -194,12 +178,8 @@ router.post("/daily-revenue-day-shop", function(req , res) {
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
 
-    olap.getDataset(query)
-        .then((result)=>{
-            res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.json(err));
+    helper.handleMdxQueryWithAuth(query, req, res);
 });
-
 
 
 module.exports = router;

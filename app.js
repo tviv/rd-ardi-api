@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 
 const dwRouter = require('./routes/dw-router');
 const olapRouter = require('./routes/olap-router');
+const authRouter = require('./routes/auth-router');
 const path = require('path');
 
 var cors = require('cors');
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: false }));
 app.set('port', (process.env.PORT || 3101));
 
 app.use('/', dwRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/olap', olapRouter);
 
 //Express only serves static assets in production
@@ -53,6 +55,7 @@ if (process.env.NODE_ENV === 'production') {
 // var http = require('http');
 // http.createServer(app).listen(app.get('port'));
 
-app.listen(app.get('port'), () => {
+let server = app.listen(app.get('port'), () => {
     console.log(`listen port: ${app.get('port')}`);
+
 });
