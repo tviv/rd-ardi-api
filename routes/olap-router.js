@@ -130,16 +130,21 @@ router.post("/dim", function(req , res) {
 
 
 //todo move from here
-const dailyRevenueFields =
-    `{
-	[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС], [Measures].[Маржа без НДС %], [Measures].[Кол клиентов]
-	,[Measures].[Средняя покупка],[Measures].[Кол артикулов],[Measures].[Количество на чек],[Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости]
+const dailyRevenueFieldPrefix =
+    `
+    WITH MEMBER [День недели] as 
+    IIF([Measures].[План Выручка без НДС]> 0 OR [Measures].[Сумма] > 0, [Даты].[Дата].CurrentMember.PROPERTIES("День недели"), NULL)
+    SELECT {
+	[Measures].[День недели], [Кол комментарий]
+	,[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС], [Measures].[Маржа без НДС %], [Measures].[Кол клиентов]
+	,[Measures].[Средняя покупка],[Measures].[Кол артикулов],[Measures].[Кол артикулов на 1 клиента], [Measures].[Остаток количество],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости]
     ,[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству]
     ,[Measures].[Накопительно безнал за месяц]
     ,[Measures].[Сумма продаж в ночное время],[Measures].[Кол клиентов в ночное время],[Measures].[Средний чек по ночным продажам],[Measures].[Доля продаж в ночное время к общим продажам]
     ,[Measures].[Кол сертификатов],[Measures].[Сумма сертификатов]
     ,[Сумма Спасибо от Сбербанка], [Средняя сумма чека со Спасибо от Сбербанка], [Доля оплат бонусами СБ в ТО с НДС], [Начислено Спасибо от Сбербанка], [Средняя сумма чека с Начислено Спасибо от Сбербанка], [Measures].[Доля начислено бонусами СБ в ТО с НДС]
-    }`;
+	,[Комментарии к работе магазина]
+    } ON COLUMNS`;
 router.post("/daily-revenue", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
@@ -148,7 +153,7 @@ router.post("/daily-revenue", function(req , res) {
     }
 
     let query = `
-        SELECT ${dailyRevenueFields} ON COLUMNS 
+        ${dailyRevenueFieldPrefix} 
         , NON EMPTY [Даты].[Дата].Members ON ROWS  
         FROM [Чеки] 
         WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
@@ -170,7 +175,7 @@ router.post("/daily-revenue-day-shop", function(req , res) {
     }
 
     let query = `
-        SELECT ${dailyRevenueFields} ON COLUMNS 
+        ${dailyRevenueFieldPrefix} 
         , NON EMPTY [Подразделения].[Подразделение].[Подразделение] ON ROWS  
         FROM [Чеки] 
         WHERE (%cond%) 
