@@ -147,11 +147,14 @@ let mdx  = {
     dateToMDX: function(date, hierarchiePrefix) {
         let result = {};
         let m = moment(date);
-        let dateKey = hierarchiePrefix + '.&[' + m.format('YYYY-MM-DDT00:00:00') + ']';
+        if (m.isAfter(moment())) m = moment();
+        let formatedDate = m.format('YYYY-MM-DDT00:00:00');
+        let dateKey = hierarchiePrefix ? hierarchiePrefix + '.&[' + formatedDate + ']' : formatedDate;
 
         return dateKey;
     },
 
+    //todo remove
     getMDXPeriod: function(date, addedDays, hierarchiePrefix) {
         let result = {};
         let m = moment(date);
@@ -161,6 +164,18 @@ let mdx  = {
         result.dateKey1 = this.dateToMDX(m, hierarchiePrefix);
 
         let m2 = m.add(addedDays, 'day');
+        result.dateKey2 = this.dateToMDX(m2, hierarchiePrefix);
+
+        result.periodString = result.dateKey2 + ':'  + result.dateKey1;
+        return result;
+    },
+
+    getMDXPeriodNew: function({date, endDate, days=0}, hierarchiePrefix) {
+        let result = {};
+        let m = moment(date);
+        result.dateKey1 = this.dateToMDX(m, hierarchiePrefix);
+
+        let m2 = endDate ? moment(endDate) : m.add(days, 'day');
         result.dateKey2 = this.dateToMDX(m2, hierarchiePrefix);
 
         result.periodString = result.dateKey2 + ':'  + result.dateKey1;

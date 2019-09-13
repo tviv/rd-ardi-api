@@ -1,7 +1,8 @@
 var chai = require('chai');
 var expect = chai.expect; // we are using the "expect" style of Chai
 var olap = require('../../olap/olap-helper');
-//const moment = require('moment');
+var routerHelper = require('../../routes/router-helper');
+const moment = require('moment');
 const {olapConfig} = require('../../config');
 
 
@@ -44,4 +45,19 @@ describe('olap-restriction tests', function() {
     });
 });
 
+
+describe('router tests', function() {
+    it('isFullMounth - true', function() {
+        expect(routerHelper.isFullMonth('2019-09-01', '2019-09-30')).to.equal(true);
+    });
+
+    it('isFullMounth - part of month - false', function() {
+        expect(routerHelper.isFullMonth('2019-09-01', '2019-09-20')).to.equal(false);
+    });
+
+    it('isFullMounth - two full month - false', function() {
+        expect(routerHelper.isFullMonth('2019-09-01', '2019-10-31')).to.equal(false);
+    });
+
+});
 

@@ -1,3 +1,4 @@
+const moment = require('moment');
 const olap = require('../olap/olap-helper');
 const auth = require('../utils/auth');
 
@@ -31,7 +32,7 @@ const rh = {
         }
 
         if (inputObject.periodFilter) {
-            let dates = olap.getMDXPeriod(inputObject.periodFilter.date, inputObject.periodFilter.days, '[Даты].[Дата]');
+            let dates = olap.getMDXPeriodNew(inputObject.periodFilter, '[Даты].[Дата]');
             console.log('period is converted to:', dates.periodString);
 
             condString +=  '{' + dates.periodString + '},';
@@ -52,7 +53,7 @@ const rh = {
                 }
                 res.json(err)
             });
-    }
+    },
 
     // getDataSetWithAuth: function (query, req, res) {
     //     let result = auth.getCredentinal(req);
@@ -79,7 +80,14 @@ const rh = {
     //     }
     // },
 
+    moveToNearestFullWeekStart: function(date) {
+        return m = moment(date).isoWeekday(1).add(-2, 'day').format('YYYY-MM-DD');
+    },
 
+    isFullMonth(date1, date2) {
+        return moment(date1).format("YYMMDD") === moment(date1).startOf('month').format("YYMMDD") &&
+            moment(date2).format("YYMMDD") === moment(date1).endOf('month').format("YYMMDD")
+    }
 
 };
 

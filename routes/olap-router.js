@@ -3,8 +3,6 @@ const router = express.Router();
 const olap = require('../olap/olap-helper');
 const helper = require('./router-helper');
 
-
-
 router.post("/sales-cone", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
@@ -52,6 +50,10 @@ router.post("/sales-cone", function(req , res) {
         WHERE ([Measures].[КУП])
         `;
 
+    //only full weeks
+    if (req.body.periodFilter) {
+        req.body.periodFilter.date = helper.moveToNearestFullWeekStart(req.body.periodFilter.date);
+    }
     let condString = helper.getMDXConditionString(req.body);
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
@@ -82,6 +84,10 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
         WHERE [КУУП]
     `;
 
+    //only full weeks
+    if (req.body.periodFilter) {
+        req.body.periodFilter.date = helper.moveToNearestFullWeekStart(req.body.periodFilter.date);
+    }
     //todo more unique
     let condString = helper.getMDXConditionString(req.body);
     query = query.replace(/\(\s*select\s*\(((.|\s)+)\)\s*on 0/igm, '(select (' + condString + ') on 0'); //todo remove reaptings - replace only group 1
@@ -145,8 +151,9 @@ const dailyRevenueFieldPrefix =
     ,[Сумма Спасибо от Сбербанка], [Средняя сумма чека со Спасибо от Сбербанка], [Доля оплат бонусами СБ в ТО с НДС], [Начислено Спасибо от Сбербанка], [Средняя сумма чека с Начислено Спасибо от Сбербанка], [Measures].[Доля начислено бонусами СБ в ТО с НДС]
 	,[Комментарии к работе магазина]
     } ON COLUMNS`;
+
 router.post("/daily-revenue", function(req , res) {
-    console.log(req.body);
+    console.log('body: ', req.body);
     if (!req.body || req.body.size > 0) {
         res.json("no body");
         return;
@@ -154,14 +161,35 @@ router.post("/daily-revenue", function(req , res) {
 
     let query = `
         ${dailyRevenueFieldPrefix} 
-        , NON EMPTY [Даты].[Дата].Members ON ROWS  
-        FROM [Чеки] 
+        , NON EMPTY [Даты].[Дата].Members ON ROWS
+        FROM (SELECT %not_full_month_cond% ON 0
+            FROM [Чеки] 
+        )
         WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
         `;
 
+    //pre cond handling
+    let notFullMonthCond = '{[Даты].[Дата].[All]}';
+    if (req.body && req.body.periodFilter) {
+        if (helper.isFullMonth(req.body.periodFilter.date, req.body.periodFilter.endDate)) {
+            req.body.filterArray.push(
+                [
+                    '[Даты].[Месяцы]',
+                    [olap.dateToMDX(req.body.periodFilter.date)],
+                ],
+            );
+        }
+        else {
+            notFullMonthCond = helper.getMDXConditionString({periodFilter: req.body.periodFilter});
+        }
+        req.body.periodFilter = null;
+    }
+
+    query = query.replace('%not_full_month_cond%', notFullMonthCond);
+
     let condString = helper.getMDXConditionString(req.body);
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
-    query = query.replace('%cond%', condString);
+    query = query.replace('%cond%', condString).replace('(,', '('); //todo indeed of the second replace it needs to think else
 
     helper.handleMdxQueryWithAuth(query, req, res);
 });
