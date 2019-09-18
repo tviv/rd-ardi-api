@@ -210,7 +210,7 @@ router.post("/daily-revenue-day-shop", function(req , res) {
         `;
 
     let condString = helper.getMDXConditionString(req.body);
-    condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты].[Подразделение]');
+    condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты]');
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
 
