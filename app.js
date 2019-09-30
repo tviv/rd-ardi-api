@@ -28,11 +28,12 @@ console.log("NODE_ENV: ", process.env.NODE_ENV);
 console.log("OLAP_URL: ", process.env.OLAP_URL);
 console.log("__dirname: ", __dirname);
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname,'../rd-ardi-front/build')));
+    let frontBuildPath = process.env.FRONT_BUILD_PATH || '../rd-ardi-front/build';
+    app.use(express.static(path.join(__dirname,frontBuildPath)));
 
     // Return the main index.html, so react-router render the route in the client
     app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, '../rd-ardi-front/build', 'index.html'));
+        res.sendFile(path.join(__dirname, frontBuildPath, 'index.html'));
     });
 }
 
