@@ -212,7 +212,7 @@ router.post("/daily-revenue-day-shop", function(req , res) {
 
     let query = `
         ${dailyRevenueFieldPrefix} 
-        , NON EMPTY [Подразделения].[Подразделение].[Подразделение] ON ROWS  
+        , NON EMPTY ([Подразделения].[Подразделение].[Подразделение], [Подразделения].[Организации].[Организация])  ON ROWS  
         FROM [Чеки] 
         WHERE (%cond%) 
         `;
