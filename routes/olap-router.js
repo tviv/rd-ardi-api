@@ -3,6 +3,19 @@ const router = express.Router();
 const olap = require('../olap/olap-helper');
 const helper = require('./router-helper');
 
+router.post("/actuality", function(req , res) {
+    query = `
+        SELECT [Measures].[Актуальность] ON 0,
+        NON EMPTY [ПодразделенияМин] ON 1
+        FROM [Чеки актуальность]
+    `;
+
+    olap.getDataset(query)
+        .then((result)=>{
+            res.json(olap.dataset2Tableset(result.data))})
+        .catch((err)=>res.send(err));
+});
+
 router.post("/sales-cone", function(req , res) {
     console.log(req.body);
     if (!req.body || req.body.size > 0) {
