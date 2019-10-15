@@ -20,11 +20,12 @@ module.exports = {
               //     fs.mkdirSync(LOG_PATH)
               // }
 
-              const str = `${moment().format('YYYY-MM_DD HH:mm:SS')}\t${username}\t${meta.replace(/\n/g, ' ').replace(/\s+/g, ' ')}`;
+              const str = `${moment().format('YYYY-MM_DD HH:mm:SS')}\tDATASET_REQUEST\t${username}\t${meta.replace(/\n/g, ' ').replace(/\s+/g, ' ')}`;
+              console.log(str);
               fs.appendFileSync(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL);
           }
       } catch (e) {
-          console.error("saving log: " + e.toString())
+          console.error("saving log: ", e)
       }
   }
 };
