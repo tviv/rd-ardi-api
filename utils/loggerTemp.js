@@ -3,7 +3,7 @@ const path = require('path');
 const os = require("os");
 const moment = require("moment");
 
-const LOG_PATH = path.join(__dirname, '../', 'logs');
+const LOG_PATH = path.join(__dirname, '../../', 'logs');
 
 module.exports = {
   initLogPathIfNeeded: () => {

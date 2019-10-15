@@ -37,8 +37,9 @@ let mdx  = {
 
     getDataset: function (query, user, password) {
         console.log(query);
+        logger.logUserRequest(user, query.substring(0, 50));
+
         return new Promise((resolve, reject) => {
-            logger.logUserRequest(user, query.substring(0, 50));
             xmla = mdx.getXmla(user, password);
 
             xmla.execute({
