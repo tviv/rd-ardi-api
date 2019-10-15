@@ -1,13 +1,14 @@
 const fs = require('fs');
+const path = require('path');
 const os = require("os");
 const moment = require("moment");
 
-const LOG_PATH = 'logs';
+const LOG_PATH = path.join(__dirname, '../', 'logs');
 
 module.exports = {
   initLogPathIfNeeded: () => {
       if (!fs.existsSync(LOG_PATH)) {
-          fs.mkdirSync(LOG_PATH)
+          fs.mkdirSync(LOG_PATH,{ recursive: true })
       }
 
   },
@@ -20,7 +21,7 @@ module.exports = {
               // }
 
               const str = `${moment().format('YYYY-MM_DD HH:mm:SS')}\t${username}\t${meta.replace(/\n/g, ' ').replace(/\s+/g, ' ')}`;
-              fs.appendFile(`${LOG_PATH}/req_log.txt`, str + os.EOL, function (err) {
+              fs.appendFile(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL, function (err) {
                   if (err) console.error("saving log: " + err)
 
               });
