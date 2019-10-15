@@ -21,10 +21,7 @@ module.exports = {
               // }
 
               const str = `${moment().format('YYYY-MM_DD HH:mm:SS')}\t${username}\t${meta.replace(/\n/g, ' ').replace(/\s+/g, ' ')}`;
-              fs.appendFile(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL, function (err) {
-                  if (err) console.error("saving log: " + err)
-
-              });
+              fs.appendFileSync(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL);
           }
       } catch (e) {
           console.error("saving log: " + e.toString())
