@@ -10,10 +10,7 @@ router.post("/actuality", function(req , res) {
         FROM [Чеки актуальность]
     `;
 
-    olap.getDataset(query)
-        .then((result)=>{
-            res.json(olap.dataset2Tableset(result.data))})
-        .catch((err)=>res.send(err));
+    helper.handleMdxQueryWithAuth(query, req, res);
 });
 
 router.post("/sales-cone", function(req , res) {
