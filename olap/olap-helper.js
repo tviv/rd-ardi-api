@@ -1,6 +1,7 @@
 const xmla4js = require("./lib/Xmla");
 const moment = require('moment');
 const {olapConfig} = require('../config');
+const logger = require('../utils/loggerTemp');
 
 const NodeCache = require('node-cache');
 const dimCash = new NodeCache({stdTTL: 100000, checkperiod: 300});
@@ -36,6 +37,7 @@ let mdx  = {
 
     getDataset: function (query, user, password) {
         console.log(query);
+        logger.logUserRequest(user, query.substring(0, 50));
         return new Promise((resolve, reject) => {
             xmla = mdx.getXmla(user, password);
 

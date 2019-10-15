@@ -3,6 +3,7 @@
 const express = require('express');
 const fs = require('fs');
 const bodyParser = require('body-parser');
+const logger = require('./utils/loggerTemp');
 
 const dwRouter = require('./routes/dw-router');
 const olapRouter = require('./routes/olap-router');
@@ -26,6 +27,8 @@ app.use('/api/olap', olapRouter);
 //Express only serves static assets in production
 console.log("NODE_ENV: ", process.env.NODE_ENV);
 console.log("OLAP_URL: ", process.env.OLAP_URL);
+logger.initLogPathIfNeeded();
+
 console.log("__dirname: ", __dirname);
 if (process.env.NODE_ENV === 'production') {
     let frontBuildPath = process.env.FRONT_BUILD_PATH || '../rd-ardi-front/build';
