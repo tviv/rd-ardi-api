@@ -43,16 +43,41 @@ const rh = {
         return condString
     },
 
-    handleMdxQueryWithAuth(query, req, res) {
+    handleMdxQueryWithAuth(queryObject, req, res) {
+        let query = '';
+        let options = {};
+        if (typeof queryObject === 'string') {
+            query = queryObject;
+        } else {
+            query = queryObject.query;
+            options = queryObject.options;
+        }
         auth.withAuth(req, res)(olap.getDataset, query)
             .then((result)=>{
-                res.json(olap.dataset2Tableset(result.data))})
+                res.json(this.applyOptionsToQueryResult(olap.dataset2Tableset(result.data), options))})
             .catch((err)=>{
                 if (err && err.status) {
                     res.statusCode = err.status
                 }
                 res.json(err)
             });
+    },
+
+    applyOptionsToQueryResult(tableSet, options) {
+        if (tableSet && tableSet.data && tableSet.data.headerColumns && options && options.columns) {
+            const rowHeadLastIndex = 0;
+            options.columns.forEach(x => {
+                for(let i = 0; i < x.range; i++) {
+                    if (tableSet.data.headerColumns.length - 1 >= x.colNumber + i) {
+                        tableSet.data.headerColumns[x.colNumber + i][rowHeadLastIndex].sign = x.sign;
+                        //todo apllying type or do it into xmla parser
+                    }
+                }
+            })
+        }
+
+        return tableSet;
+
     },
 
     // getDataSetWithAuth: function (query, req, res) {

@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const olap = require('../olap/olap-helper');
 const helper = require('./router-helper');
+const CEP = require ('./ColumnExtraProperty').ColumnExtraProperty;
+const REP = require ('./ColumnExtraProperty').RowExtraProperty;
 
 router.post("/actuality", function(req , res) {
-    query = `
+    const query = `
         SELECT [Measures].[Актуальность] ON 0,
         NON EMPTY [ПодразделенияМин] ON 1
         FROM [Чеки актуальность]
@@ -24,35 +26,23 @@ router.post("/sales-cone", function(req , res) {
     // res.json("");
     // return;
 
-    var query = "\t\t\tSELECT {[Measures].[Актуальность2], [Measures].[Чеки актуальность]} ON 0\n" +
-        "\t\t\t,[ПодразделенияМин] ON 1\n" +
-        "\t\t\tFROM [Чеки актуальность] where [Подразделения].[Организации].[Организация].&[31] --where [Подразделения].[Подразделения].&[227]";
-
-    query = "SELECT NON EMPTY [Подразделения].[Подразделение].Members  ON COLUMNS , \n" +
-        "NON EMPTY [Товары].[Товар].[Товар].AllMembers DIMENSION PROPERTIES [Товары].[Товар].[Товар].[Код товара] ON ROWS  \n" +
-        "FROM (SELECT ({[Даты чека].[Дата].&[2018-02-06T00:00:00]:[Даты чека].[Дата].&[2018-05-27T00:00:00]}) ON COLUMNS  FROM [Чеки]) \n" +
-        "WHERE ([Measures].[КИП]) ";
-
-    // query = "SELECT NON EMPTY ([Подразделения].[Подразделение].AllMembers, {[Measures].[КИП], [Сумма]}) ON 0,\n" +
-    //     "NON EMPTY [Товары].[Товар].[Товар].Members DIMENSION PROPERTIES PARENT_UNIQUE_NAME,HIERARCHY_UNIQUE_NAME,[Товары].[Товар].[Товар].[Код товара] ON 1\n" +
-    //     "FROM [Чеки]" +
-    //     "WHERE ([Даты].[Дата].&[2018-02-06T00:00:00], [Товары].[Товары].&[171467])";
-
-    query = `
+    let query = `
         WITH MEMBER [КУУП] AS
         IIF([Подразделения].[Подразделение].CurrentMember is [Подразделения].[Подразделение].[All],
          ([Measures].[КУП], [Подразделения].[Подразделение].[All]),
          [Measures].[КУП])
          member [Подразделения].[Подразделение].[Код] as
-         IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  [Товары].[Товар ключ].Currentmember.Properties("Код товара"), NULL)
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  [Товары].[Товар ключ].CurrentMember.Properties("Key", TYPED), NULL)
          member [Подразделения].[Подразделение].[Активный] as
-         IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  [Товары].[Товар ключ].Currentmember.Properties("Активный"), NULL)
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  (EXISTING([Товары].[Активный].[Активный])).Item(0).Properties("Key", TYPED), NULL)
+         member [Подразделения].[Подразделение].[Новый] as
+         IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  (EXISTING([Товары].[Новый].[Новый])).Item(0).Properties("Key", TYPED), NULL)
         
          member [Подразделения].[Подразделение].[КУП] as
          [Подразделения].[Подразделение].[All]
         
-        SELECT NON EMPTY ({[Подразделения].[Подразделение].[Активный], [Код], [Подразделения].[Подразделение].[КУП], order([Подразделения].[Подразделение].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
-        ORDER(NONEMPTY([Товары].[Товар ключ].[Товар ключ]), [Подразделения].[Подразделение].[КУП], DESC)   ON 1
+        SELECT ({[Подразделения].[Подразделение].[Активный], [Подразделения].[Подразделение].[Новый],  [Код], [Подразделения].[Подразделение].[КУП], order([Подразделения].[Подразделение].[Подразделение].AllMembers,  [Подразделения].[Подразделение].Properties( "Key" ), BASC)}) ON 0,
+        NON EMPTY ORDER(NONEMPTY([Товары].[Товар ключ].[Товар ключ]), [Подразделения].[Подразделение].[КУП], DESC)   ON 1
 		FROM (
 		SELECT (%cond%) ON 0
         FROM [Чеки]
@@ -68,7 +58,16 @@ router.post("/sales-cone", function(req , res) {
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
 
-    helper.handleMdxQueryWithAuth(query, req, res);
+    const options = {columns:
+            [
+                new CEP({colNumber: 0, sign: 'item'}),
+                new CEP({colNumber: 1, sign: 'active', type: 'number'}),
+                new CEP({colNumber: 2, sign: 'new', type: 'number'}),
+                new CEP({colNumber: 3, sign: 'item_code'}),
+                new CEP({colNumber: 4, sign: 'total'})
+            ]
+    };
+    helper.handleMdxQueryWithAuth({query: query, options: options}, req, res);
 });
 
 
@@ -76,7 +75,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
     console.log(req.body);
 
 
-    query = `
+    let query = `
         WITH MEMBER [КУУП] AS
         IIF([Подразделения].[Подразделение].CurrentMember is [Подразделения].[Подразделение].[All],
          ([Measures].[КУП], [Подразделения].[Подразделение].[All]),
@@ -112,7 +111,7 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
 router.post("/sales-cone/cell-property", function(req , res) {
     console.log(req.body);
 
-    query = `
+    let query = `
         WITH 
         MEMBER [Остаток] AS [Measures].[Остаток количество]
         MEMBER [Цена продажи] AS [Measures].[Средняя цена]
