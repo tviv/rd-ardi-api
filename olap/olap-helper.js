@@ -39,12 +39,14 @@ let mdx  = {
         console.log(query);
         logger.logUserRequest(user, query.substring(0, 50));
 
+        const queryForXmla = `${query} CELL PROPERTIES VALUE, FORMAT_STRING, LANGUAGE, BACK_COLOR, FORE_COLOR, FONT_FLAGS, FORMATTED_VALUE`;
+
         return new Promise((resolve, reject) => {
             xmla = mdx.getXmla(user, password);
 
             xmla.execute({
 
-                statement: query,
+                statement: queryForXmla,
                 properties: {
                     Catalog: olapConfig.database,
                     //Format: "Tabular",
