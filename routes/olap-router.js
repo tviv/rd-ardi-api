@@ -117,7 +117,7 @@ router.post("/sales-cone/cell-property", function(req , res) {
         MEMBER [Цена продажи] AS [Measures].[Средняя цена]
         MEMBER [Сумма продажи] AS [Measures].[Сумма]
         MEMBER [Плановый УВМ] AS [План сегмент Доля Маржи без НДС]
-        MEMBER [Оборачиваемость] AS (Ancestor(TAIL(EXISTING([Даты].[Месяцы].[Дата]), 1).item(0), 1).item(0),   [Measures].[Коэф оборачиваемости]), FORMAT_STRING = "#,##0.00"
+        MEMBER [Оборачиваемость] AS (Ancestor(TAIL(EXISTING([Даты].[Месяцы].[Дата]), 1).item(0).PrevMember, 1).item(0),   [Measures].[Коэф оборачиваемости]), FORMAT_STRING = "#,##0.00"
         MEMBER [Сумма списания] AS-1*([Виды операций].[ВидОперации].&[Списание], [Measures].[Оборот сумма без НДС]), FORMAT_STRING = "#,##0.00"
         MEMBER [Доля списания к ТО] AS [Сумма списания]/[Сумма без НДс], FORMAT_STRING = "#,##0.00%"
         MEMBER [Количество в день] AS [Measures].[Количество товара]/(EXISTING([Даты].[Дата].[Дата])).Count, FORMAT_STRING = "#,##0.00"
