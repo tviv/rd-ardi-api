@@ -209,9 +209,7 @@ router.post("/daily-revenue", function(req , res) {
     }
 
     //todo do refactoring this
-    if (!req.body.withShopColumn) {
-        query = query.replace('%tempCol%', '[Measures].[tmpCol],')
-    }
+    query = query.replace('%tempCol%', req.body.withShopColumn ? '' : '[Measures].[tmpCol],');
 
     query = query.replace('%not_full_month_cond%', notFullMonthCond);
 
@@ -237,6 +235,8 @@ router.post("/daily-revenue-day-shop", function(req , res) {
         FROM [Чеки] 
         WHERE (%cond%) 
         `;
+
+    query = query.replace('%tempCol%', '');
 
     let condString = helper.getMDXConditionString(req.body);
     condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты]');
