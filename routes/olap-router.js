@@ -159,7 +159,9 @@ const dailyRevenueFieldPrefix =
     MEMBER [Сумма выручки с продаж, оплата сертификатам, руб.] as [Сумма сертификатов]  
     MEMBER [Выручка с продаж с НДС без Прочее] as [Выручка с продаж без Прочее]  
     MEMBER [Средний чек] as [Средняя сумма]  
+    MEMBER [tmpCol] AS IIF([Measures].[Сумма] > 0, 1, NULL) 
     SELECT {
+    %tempCol%
     [Measures].[День недели], [Кол комментарий]
     ,[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж с НДС без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС], [Measures].[Маржа без НДС %], [Measures].[Кол клиентов]
     ,[Measures].[Средний чек],[Measures].[Кол артикулов],[Measures].[Кол артикулов на 1 клиента], [Measures].[Остаток кол артикулов],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости]
@@ -178,7 +180,7 @@ router.post("/daily-revenue", function(req , res) {
         return;
     }
 
-    const shopSelectString = req.body.withShopColumn ? ', [Подразделения].[Подразделение].Members' : ', [Подразделения].[Подразделение].[All]';
+    const shopSelectString = req.body.withShopColumn ? ', [Подразделения].[Подразделение].Members' : '';
 
     let query = `
         ${dailyRevenueFieldPrefix} 
@@ -204,6 +206,11 @@ router.post("/daily-revenue", function(req , res) {
             notFullMonthCond = helper.getMDXConditionString({periodFilter: req.body.periodFilter});
         }
         req.body.periodFilter = null;
+    }
+
+    //todo do refactoring this
+    if (!req.body.withShopColumn) {
+        query = query.replace('%tempCol%', '[Measures].[tmpCol],')
     }
 
     query = query.replace('%not_full_month_cond%', notFullMonthCond);
