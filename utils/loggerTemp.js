@@ -22,7 +22,7 @@ module.exports = {
 
               const str = `${moment().format('YYYY-MM-DD HH:mm:SS')}\tDATASET_REQUEST\t${username}\t${meta.replace(/\n/g, ' ').replace(/\s+/g, ' ')}`;
               console.log(str);
-              fs.appendFileSync(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL);
+              //fs.appendFileSync(path.join(LOG_PATH, 'req_log.txt'), str + os.EOL);
           }
       } catch (e) {
           console.error("saving log: ", e)
