@@ -155,7 +155,9 @@ const dailyRevenueFieldPrefix =
     WITH MEMBER [День недели] as 
     IIF([Measures].[План Выручка без НДС]> 0 OR [Measures].[Сумма] > 0, [Даты].[Дата].CurrentMember.PROPERTIES("День недели"), NULL)
     MEMBER [Остаток кол артикулов] as [Остаток количество]
-    MEMBER [Кол клиентов ] as SUM(([Даты].[Месяцы].[All],[Даты].[Это полный день].[All], [Даты].[Дата].[All], [Даты чека].[Это полный день].&[Да], StrToSet(SsasRdExtention.replace(SetToStr([Даты].[Месяцы]), "[Даты]", "[Даты чека]"))), [Measures].[Кол клиентов])
+    MEMBER [Кол клиентов ] as SUM(([Даты].[Месяцы].[All],[Даты].[Это полный день].[All], [Даты].[Дата].[All], [Даты чека].[Это полный день].&[Да], 
+        %tricky_client_expr%,
+        [Measures].[Кол клиентов]))
     MEMBER [Количество оплат сертификатам, шт] as [Кол сертификатов]  
     MEMBER [Сумма выручки с продаж, оплата сертификатам, руб.] as [Сумма сертификатов]  
     MEMBER [Выручка с продаж с НДС без Прочее] as [Выручка с продаж без Прочее]  
@@ -164,7 +166,7 @@ const dailyRevenueFieldPrefix =
     SELECT {
     %tempCol%
     [Measures].[День недели], [Кол комментарий]
-    ,[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж с НДС без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС], [Measures].[Маржа без НДС %], [Measures].[Кол клиентов]
+    ,[Measures].[План Выручка без НДС], [Measures].[Накопительная выручка за месяц без НДС],[Measures].[Выполнение плана выручки без НДС], [Measures].[Выручка с продаж с НДС без Прочее],[Measures].[Прочее, Накопительная выручка за месяц без НДС],[Measures].[План Маржа без НДС],[Measures].[Выполнение плана маржи без НДС],[Measures].[Накопительная маржа за месяц без ндс],[Measures].[Маржа без НДС], [Measures].[Маржа без НДС %], [Measures].[Кол клиентов ]
     ,[Measures].[Средний чек],[Measures].[Кол артикулов],[Measures].[Кол артикулов на 1 клиента], [Measures].[Остаток кол артикулов],[Measures].[Остаток сумма без НДС],[Measures].[Коэф оборачиваемости]
     ,[Measures].[Количество SCU сток],[Measures].[Количество SCU транзит],[Measures].[Сумма закупки сток],[Measures].[Сумма закупки транзит],[Measures].[Доля закупки сток в закупке],[Measures].[Доля закупки транзит в закупке],[Measures].[Сумма закупки],[Measures].[Сумма безнал],[Measures].[Кол клиентов по безнал],[Measures].[Средний чек по безнал],[Measures].[Доля продаж по безнал к общим продажам],[Measures].[Доля клиентов по безнал к общему количеству]
     ,[Measures].[Накопительно безнал за месяц]
@@ -214,6 +216,21 @@ router.post("/daily-revenue", function(req , res) {
 
     query = query.replace('%not_full_month_cond%', notFullMonthCond);
 
+    let trickClientExpr =
+        notFullMonthCond !== '{[Даты].[Дата].[All]}' ?
+        `
+        StrToSet(iif(VBA!InStr(SetToStr([Даты].[Дата]), "[All]") > 0, 
+        SsasRdExtention.replace("%not_full_month_cond%", "[Даты]", "[Даты чека]"), 
+        SsasRdExtention.replace(SetToStr([Даты].[Дата]), "[Даты]", "[Даты чека]"))) 
+        ` :
+        `
+        StrToSet(
+        SsasRdExtention.replace(SetToStr([Даты].[Месяцы]), "[Даты]", "[Даты чека]")) 
+        ` ;
+
+    query = query.replace('%tricky_client_expr%', trickClientExpr);
+    query = query.replace('%not_full_month_cond%', notFullMonthCond);
+
     let condString = helper.getMDXConditionString(req.body);
     condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты]');
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
@@ -238,6 +255,14 @@ router.post("/daily-revenue-day-shop", function(req , res) {
         `;
 
     query = query.replace('%tempCol%', '');
+
+    let trickClientExpr =
+        `
+        StrToSet(
+        SsasRdExtention.replace(SetToStr([Даты].[Месяцы]), "[Даты]", "[Даты чека]")) 
+        ` ;
+
+    query = query.replace('%tricky_client_expr%', trickClientExpr);
 
     let condString = helper.getMDXConditionString(req.body);
     condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты]');
