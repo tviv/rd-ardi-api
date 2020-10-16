@@ -251,7 +251,7 @@ router.post("/daily-revenue-day-shop", function(req , res) {
         ${dailyRevenueFieldPrefix} 
         , NON EMPTY ([Подразделения].[Подразделение].[Подразделение], [Подразделения].[Подформат].[Подформат])  ON ROWS  
         FROM [Чеки] 
-        WHERE (%cond%) 
+        WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
         `;
 
     query = query.replace('%tempCol%', '');
@@ -264,7 +264,18 @@ router.post("/daily-revenue-day-shop", function(req , res) {
 
     query = query.replace('%tricky_client_expr%', trickClientExpr);
 
+    //todo duplicating
+    if (req.body && req.body.periodFilter && helper.isFullMonth(req.body.periodFilter.date, req.body.periodFilter.endDate)) {
+        req.body.filterArray.push(
+            [
+                '[Даты].[Месяцы]',
+                [olap.dateToMDX(req.body.periodFilter.date)],
+            ],
+        );
+        req.body.periodFilter = undefined;
+    }
     let condString = helper.getMDXConditionString(req.body);
+
     condString = condString.replace(/\[Подразделения\]\.\[Подразделение\]/g, '[Подразделения].[Подформаты]');
 //    query = query.replace(/\)\s*$/, ', ' + condString+ ')');
     query = query.replace('%cond%', condString);
