@@ -33,6 +33,7 @@ router.post("/sales-cone", function(req , res) {
          [Measures].[КУП])
          member [Подразделения].[Подразделение].[Код] as
          IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  [Товары].[Товар ключ].CurrentMember.Properties("Key", TYPED), NULL)
+         ,FORMAT_STRING = "#0"
          member [Подразделения].[Подразделение].[Активный] as
          IIF(([Подразделения].[Подразделение].[All], [КУУП]) >= 0,  (EXISTING([Товары].[Активный].[Активный])).Item(0).Properties("Key", TYPED), NULL)
          member [Подразделения].[Подразделение].[Новый] as
@@ -283,5 +284,211 @@ router.post("/daily-revenue-day-shop", function(req , res) {
     helper.handleMdxQueryWithAuth(query, req, res);
 });
 
+
+
+//segment revenue
+//todo move from here
+const segmentRevenueFieldPrefix =
+    `
+WITH MEMBER [План Кол артикулов на 1 клиента] AS
+[План сегмент Количество артикулов ]/[План Количество клиентов ]
+,FORMAT_STRING = "#,##0.00"
+
+MEMBER [Кол клиентов ] as SUM(([Даты].[Месяцы].[All],[Даты].[Это полный день].[All], [Даты].[Дата].[All], [Даты чека].[Это полный день].&[Да], 
+    
+    StrToSet(
+    SsasRdExtention.replace(SetToStr([Даты].[Месяцы]), "[Даты]", "[Даты чека]"))) 
+    ,
+    [Measures].[Кол клиентов прямое])
+\t,FORMAT_STRING = "#,##0"
+
+
+MEMBER [Measures].[План Выручка]
+\tAS
+\tSUM(SsasRdExtention.[ДатыТП](),
+\tCASE
+\tWHEN ParallelPeriod([Даты].[Месяцы].[Дата],0).Count = 1 THEN
+\tSUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].CurrentMember},[Measures].[План сегмент Сумма Выручка магазин]) /[ИтогоКолДнейПлана]
+\tELSE
+\t[План сегмент Сумма Выручка магазин]
+\tEND)
+\t,FORMAT_STRING = "#,##0.00"
+\t
+MEMBER [План Количество клиентов ] AS
+   SUM(SsasRdExtention.[ДатыТП](),
+   CASE
+   WHEN ParallelPeriod([Даты].[Месяцы].[Дата],0).Count = 1 THEN
+   SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].CurrentMember},[Measures].[План сегмент Количество клиентов]) /[ИтогоКолДнейПлана]
+   WHEN ParallelPeriod([Даты].[Месяцы].[Месяц],0).Count = 1 THEN
+   [Measures].[План сегмент Количество клиентов]
+   ELSE
+   NULL
+   END)
+  ,FORMAT_STRING = "#,##0"
+
+
+MEMBER [План сегмент Количество артикулов ] AS
+   SUM(SsasRdExtention.[ДатыТП](),
+   CASE
+   WHEN ParallelPeriod([Даты].[Месяцы].[Дата],0).Count = 1 THEN
+   SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].CurrentMember},[Measures].[План сегмент Количество артикулов]) /[ИтогоКолДнейПлана]
+   WHEN ParallelPeriod([Даты].[Месяцы].[Месяц],0).Count = 1 THEN
+   [Measures].[План сегмент Количество артикулов]
+   ELSE
+   NULL
+   END)
+  ,FORMAT_STRING = "#,##0.00"
+
+  MEMBER [План сегмент Оборачиваемость ] AS
+   AVG(CASE
+   WHEN ParallelPeriod([Даты].[Месяцы].[Дата],0).Count = 1 THEN
+   {[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].CurrentMember}
+   WHEN ParallelPeriod([Даты].[Месяцы].[Месяц],0).Count = 1 THEN
+   [Даты].[Месяцы]
+   ELSE
+   NULL
+   END, [Measures].[План сегмент Оборачиваемость])
+  ,FORMAT_STRING = "#,##0.00"
+        
+MEMBER [План сегмент уровень маржи] AS
+[Measures].[План сегмент Маржа без НДС]/[Measures].[План сегмент Выручка без НДС]
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Уровень маржи без НДС] AS 
+[Measures].[Маржа без НДС %]/100
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Отклонение УВМ от плана] AS
+[Уровень маржи без НДС]-[План сегмент уровень маржи]
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Кол клиентов Сумма по сегментам] AS
+SUM(EXISTING([Сегменты].[Сегмент].[Сегмент]), [Кол клиентов ])
+,FORMAT_STRING = "#,##0"
+
+MEMBER [Выполнение плана Кол клиентов] AS
+[Measures].[Кол клиентов Сумма по сегментам]/[План Количество клиентов ]
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Выполнение плана Кол артикулов] AS
+[Кол артикулов]/[План сегмент Количество артикулов ]
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [План сегмент Стоимость одного артикула ] AS
+[План Выручка]/[План сегмент Количество артикулов ]
+//[План сегмент Сумма Выручка магазин]
+,FORMAT_STRING = "#,##0.00"
+
+MEMBER [Отклонение от плана Ср. ст-ть артикула] AS
+[Ср. ст-ть артикула] - [План сегмент Стоимость одного артикула ]
+
+MEMBER [Кол артикулов на 1 сум клиента] AS
+[Measures].[Количество]/[Кол клиентов Сумма по сегментам]
+,FORMAT_STRING = "#,##0.00"
+
+MEMBER [Отклонение от плана Коэф оборачиваемости] AS
+[Коэф оборачиваемости] - [План сегмент Оборачиваемость ]
+
+MEMBER [Measures].[Остаток количество ] AS 
+IIF ([План сегмент Выручка без НДС] > 0, [Остаток количество], NULL)
+,FORMAT_STRING = "#,##0"
+MEMBER [Measures].[Остаток сумма без НДС ] AS 
+IIF ([План сегмент Выручка без НДС] > 0, [Остаток сумма без НДС], NULL)
+,FORMAT_STRING = "#,##0"
+MEMBER [Measures].[Сумма закупки ] AS 
+IIF ([План сегмент Выручка без НДС] > 0, [Сумма закупки], NULL)
+,FORMAT_STRING = "#,##0"
+
+SELECT {
+    [Measures].[План сегмент Выручка без НДС]
+    ,[Measures].[Накопительная выручка за месяц без НДС]
+    ,[Measures].[Выполнение план сегмент Выручка без НДС]
+    ,[Measures].[План сегмент Маржа без НДС]
+    ,[Measures].[Накопительная маржа за месяц без ндс]
+    ,[Measures].[Выполнение план сегмент Маржа без НДС]
+    ,[Measures].[План сегмент уровень маржи]
+    ,[Measures].[Уровень маржи без НДС]
+    ,[Measures].[Отклонение УВМ от плана]
+    ,[Measures].[План Количество клиентов ]
+    ,[Measures].[Кол клиентов Сумма по сегментам]
+    ,[Measures].[Выполнение плана Кол клиентов]
+    ,[Measures].[План сегмент Количество артикулов ]
+    ,[Measures].[Кол артикулов]
+    ,[Measures].[Выполнение плана Кол артикулов]
+    ,[Measures].[План сегмент Стоимость одного артикула ]
+    ,[Measures].[Ср. ст-ть артикула]
+    ,[Measures].[Отклонение от плана Ср. ст-ть артикула]
+    ,[Measures].[План Кол артикулов на 1 клиента]
+    ,[Measures].[Кол артикулов на 1 сум клиента]
+    ,[Measures].[План сегмент Оборачиваемость ]
+    ,[Measures].[Коэф оборачиваемости]
+    ,[Measures].[Отклонение от плана Коэф оборачиваемости]
+    ,[Measures].[Остаток количество ]
+    ,[Measures].[Остаток сумма без НДС ]
+    ,[Measures].[Сумма закупки ]
+    } ON COLUMNS
+`;
+
+router.post("/segment-revenue", function(req , res) {
+    console.log(req.body);
+    if (!req.body || req.body.size > 0) {
+        res.json("no body");
+        return;
+    }
+
+    let query = `
+        ${segmentRevenueFieldPrefix} 
+        , NON EMPTY [Сегменты].[Сегмент].Members  ON ROWS  
+        FROM [Чеки] 
+        WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
+        `;
+
+    //todo duplicating
+    if (req.body && req.body.periodFilter && helper.isFullMonth(req.body.periodFilter.date, req.body.periodFilter.endDate)) {
+        req.body.filterArray.push(
+            [
+                '[Даты].[Месяцы]',
+                [olap.dateToMDX(req.body.periodFilter.date)],
+            ],
+        );
+        req.body.periodFilter = undefined;
+    }
+    let condString = helper.getMDXConditionString(req.body);
+
+    query = query.replace('%cond%', condString);
+
+    helper.handleMdxQueryWithAuth(query, req, res);
+});
+
+router.post("/segment-revenue-detail", function(req , res) {
+    console.log(req.body);
+    if (!req.body || req.body.size > 0) {
+        res.json("no body");
+        return;
+    }
+
+    let query = `
+        ${segmentRevenueFieldPrefix} 
+        , NON EMPTY [Даты].[Дата].[Дата] ON ROWS  
+        FROM [Чеки] 
+        WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
+        `;
+
+    //todo duplicating
+    if (req.body && req.body.periodFilter && helper.isFullMonth(req.body.periodFilter.date, req.body.periodFilter.endDate)) {
+        req.body.filterArray.push(
+            [
+                '[Даты].[Месяцы]',
+                [olap.dateToMDX(req.body.periodFilter.date)],
+            ],
+        );
+        req.body.periodFilter = undefined;
+    }
+    let condString = helper.getMDXConditionString(req.body);
+
+    query = query.replace('%cond%', condString);
+
+    helper.handleMdxQueryWithAuth(query, req, res);
+});
 
 module.exports = router;
