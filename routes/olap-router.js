@@ -290,7 +290,8 @@ router.post("/daily-revenue-day-shop", function(req , res) {
 //todo move from here
 const segmentRevenueFieldPrefix =
     `
-WITH MEMBER [План Кол артикулов на 1 клиента] AS
+WITH 
+MEMBER [План Кол артикулов на 1 клиента] AS
 [План сегмент Количество артикулов ]/[План Количество клиентов ]
 ,FORMAT_STRING = "#,##0.00"
 
@@ -349,7 +350,10 @@ MEMBER [План сегмент Количество артикулов ] AS
    NULL
    END, [Measures].[План сегмент Оборачиваемость])
   ,FORMAT_STRING = "#,##0.00"
-        
+
+MEMBER [Отклонение выполнение по ВМ от выполнение по ТО] AS
+[Выполнение план сегмент Маржа без НДС] - [Выполнение план сегмент Выручка без НДС]
+
 MEMBER [План сегмент уровень маржи] AS
 [Measures].[План сегмент Маржа без НДС]/[Measures].[План сегмент Выручка без НДС]
 ,FORMAT_STRING = "#,##0.00%"
@@ -389,15 +393,8 @@ MEMBER [Кол артикулов на 1 сум клиента] AS
 MEMBER [Отклонение от плана Коэф оборачиваемости] AS
 [Коэф оборачиваемости] - [План сегмент Оборачиваемость ]
 
-MEMBER [Measures].[Остаток количество ] AS 
-SUM(NONEMPTY(EXISTING([Сегменты].[Сегмент].[Сегмент],[План сегмент Выручка без НДС])), [Остаток количество])
-,FORMAT_STRING = "#,##0"
-MEMBER [Measures].[Остаток сумма без НДС ] AS 
-SUM(NONEMPTY(EXISTING([Сегменты].[Сегмент].[Сегмент],[План сегмент Выручка без НДС])), [Остаток сумма без НДС])
-,FORMAT_STRING = "#,##0"
-MEMBER [Measures].[Сумма закупки ] AS 
-SUM(NONEMPTY(EXISTING([Сегменты].[Сегмент].[Сегмент],[План сегмент Выручка без НДС])), [Сумма закупки])
-,FORMAT_STRING = "#,##0"
+MEMBER [Отклонение от плана Кол артикулов на 1 клиента] AS
+[Кол артикулов на 1 сум клиента] - [План Кол артикулов на 1 клиента]
 
 SELECT {
     [Measures].[План сегмент Выручка без НДС]
@@ -406,6 +403,7 @@ SELECT {
     ,[Measures].[План сегмент Маржа без НДС]
     ,[Measures].[Накопительная маржа за месяц без ндс]
     ,[Measures].[Выполнение план сегмент Маржа без НДС]
+    ,[Measures].[Отклонение выполнение по ВМ от выполнение по ТО]
     ,[Measures].[План сегмент уровень маржи]
     ,[Measures].[Уровень маржи без НДС]
     ,[Measures].[Отклонение УВМ от плана]
@@ -420,13 +418,14 @@ SELECT {
     ,[Measures].[Отклонение от плана Ср. ст-ть артикула]
     ,[Measures].[План Кол артикулов на 1 клиента]
     ,[Measures].[Кол артикулов на 1 сум клиента]
+    ,[Measures].[Отклонение от плана Кол артикулов на 1 клиента]
     ,[Measures].[План сегмент Оборачиваемость ]
     ,[Measures].[Коэф оборачиваемости]
     ,[Measures].[Отклонение от плана Коэф оборачиваемости]
-    ,[Measures].[Остаток количество ]
-    ,[Measures].[Остаток сумма без НДС ]
-    ,[Measures].[Сумма закупки ]
-    } ON COLUMNS
+    ,[Measures].[Остаток количество]
+    ,[Measures].[Остаток сумма без НДС]
+    ,[Measures].[Сумма закупки]
+        } ON COLUMNS  
 `;
 
 router.post("/segment-revenue", function(req , res) {
@@ -439,7 +438,7 @@ router.post("/segment-revenue", function(req , res) {
     let query = `
         ${segmentRevenueFieldPrefix} 
         , NON EMPTY [Сегменты].[Сегмент].Members  ON ROWS  
-        FROM [Чеки] 
+        FROM (SELECT EXCEPT([Сегменты].[Сегмент].&[187662]:[Сегменты].[Сегмент].&[133795], {%cond310%} ) ON 0 FROM [Чеки]) 
         WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
         `;
 
@@ -453,6 +452,9 @@ router.post("/segment-revenue", function(req , res) {
         );
         req.body.periodFilter = undefined;
     }
+
+    query = query.replace('%cond310%', req.body && req.body.withoutSegment310 === true ? '[Сегменты].[Сегмент].&[99443]' : '');
+
     let condString = helper.getMDXConditionString(req.body);
 
     query = query.replace('%cond%', condString);
