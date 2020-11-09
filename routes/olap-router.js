@@ -453,7 +453,7 @@ router.post("/segment-revenue", function(req , res) {
         req.body.periodFilter = undefined;
     }
 
-    query = query.replace('%cond310%', req.body && req.body.withoutSegment310 === true ? '[Сегменты].[Сегмент].&[99443]' : '');
+    query = query.replace('%cond310%', req.body && req.body.withSegment310 === true ? '' : '[Сегменты].[Сегмент].&[99443]');
 
     let condString = helper.getMDXConditionString(req.body);
 
