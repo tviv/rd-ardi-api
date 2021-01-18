@@ -15,8 +15,8 @@ router.post("/revenue", function(req , res) {
     let query = `
         ${sSegmentRevenueFieldPrefix} 
         , NON EMPTY [Сегменты].[Сегмент].Members  ON ROWS  
-        FROM ( SELECT ${sSegmentAllConditionForSegments} ON 0 FROM [Чеки]) 
-        WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
+        FROM [Чеки]
+        WHERE (%cond%, [Сегменты].[Основные сегменты].&[1], [Даты].[Это полный день].&[Да]) 
         `;
 
     //show for no food and dry the same plan of turnover
@@ -25,7 +25,7 @@ router.post("/revenue", function(req , res) {
         query = query.replace('[Measures].[План сегмент Оборачиваемость]', fixedPlanForTwoSimilarSegments);
     }
 
-    query = query.replace('SUM(EXISTING([Сегменты].[Сегмент]), [Кол клиентов ])', `IIF([Сегменты].[Сегмент].CurrentMember is [Сегменты].[Сегмент].[All], SUM((${helper.getMDXConditionString(req.body)},${sSegmentAllConditionForSegments}), [Кол клиентов ]), [Кол клиентов ])`);
+    //query = query.replace('SUM(EXISTING([Сегменты].[Сегмент]), [Кол клиентов ])', `IIF([Сегменты].[Сегмент].CurrentMember is [Сегменты].[Сегмент].[All], SUM((${helper.getMDXConditionString(req.body)},${sSegmentAllConditionForSegments}), [Кол клиентов ]), [Кол клиентов ])`);
 
     doGeneralQueryHandingAndRun(req, res, query);
 
@@ -46,9 +46,9 @@ router.post("/revenue-detail", function(req , res) {
         `;
 
     if (helper.getMDXConditionString(req.body).indexOf('[Сегменты].[Сегмент]') < 0) {
-        query = query.replace('%cond%', `%cond%, ${sSegmentAllConditionForSegments}`);
-        const commonFilter = olap.convertArrValuesToMDXTupleString(req.body.filterArray);
-        query = query.replace('EXISTING([Сегменты].[Сегмент])', `(${commonFilter ? commonFilter + ',' : ''}${sSegmentAllConditionForSegments})`);
+        //query = query.replace('%cond%', `%cond%, ${sSegmentAllConditionForSegments}`);
+        //const commonFilter = olap.convertArrValuesToMDXTupleString(req.body.filterArray);
+        //query = query.replace('EXISTING([Сегменты].[Сегмент])', `(${commonFilter ? commonFilter + ',' : ''}${sSegmentAllConditionForSegments})`);
     }
 
     doGeneralQueryHandingAndRun(req, res, query);
@@ -64,17 +64,9 @@ router.post("/revenue-detail-expanded", function(req , res) {
     let query = `
         ${sSegmentRevenueFieldPrefix} 
         , NON EMPTY ([Сегменты].[Сегмент].[Сегмент], [Даты].[Дата].[Дата])  ON ROWS  
-        FROM ( SELECT ${sSegmentAllConditionForSegments} ON 0 FROM [Чеки]) 
-        WHERE (%cond%, [Даты].[Это полный день].&[Да]) 
+        FROM [Чеки] 
+        WHERE (%cond%, [Сегменты].[Основные сегменты].&[1], [Даты].[Это полный день].&[Да]) 
         `;
-
-    ////show for no food and dry the same plan of turnover
-    // let fixedPlanForTwoSimilarSegments = 'IIF([Сегменты].[Сегмент].CurrentMember is [Сегменты].[Сегмент].[All], ([Сегменты].[Направление менеджера].&[4], [Measures].[План сегмент Оборачиваемость]), [Measures].[План сегмент Оборачиваемость])';
-    // if (helper.getMDXConditionString(req.body).indexOf('{[Сегменты].[Направление менеджера].&[4],[Сегменты].[Направление менеджера].&[5]}') >= 0) {
-    //     query = query.replace('[Measures].[План сегмент Оборачиваемость]', fixedPlanForTwoSimilarSegments);
-    // }
-
-    //query = query.replace('SUM(EXISTING([Сегменты].[Сегмент]), [Кол клиентов ])', `IIF([Сегменты].[Сегмент].CurrentMember is [Сегменты].[Сегмент].[All], SUM((${helper.getMDXConditionString(req.body)},${sSegmentAllConditionForSegments}), [Кол клиентов ]), [Кол клиентов ])`);
 
     doGeneralQueryHandingAndRun(req, res, query);
 
@@ -95,7 +87,7 @@ const doGeneralPreHandle = function (req) {
 };
 
 const doGeneralQueryHandingAndRun = function (req, res, q) {
-    var query = q.replace(/%cond310%/gi, req.body && req.body.withSegment310 === true ? '' : '[Сегменты].[Сегмент].&[99443]');
+    var query = q.replace(/%cond%/gi, req.body && req.body.withSegment310 === true ? '%cond%' : '%cond%, [Сегменты].[Сегмент310].&[0]');
 
     doGeneralPreHandle(req);
 
@@ -106,7 +98,7 @@ const doGeneralQueryHandingAndRun = function (req, res, q) {
     helper.handleMdxQueryWithAuth(query, req, res);
 };
 
-const sSegmentAllConditionForSegments = 'EXCEPT([Сегменты].[Сегмент].&[187662]:[Сегменты].[Сегмент].&[133795], {%cond310%})';
+//const sSegmentAllConditionForSegments = 'EXCEPT([Сегменты].[Сегмент].&[187662]:[Сегменты].[Сегмент].&[133795], {%cond310%})';
 
 const sSegmentRevenueFieldPrefix =
     `
@@ -139,7 +131,7 @@ MEMBER [План Количество клиентов ] AS
    SUM(SsasRdExtention.[ДатыТП](),
    CASE
    WHEN ParallelPeriod([Даты].[Месяцы].[Дата],0).Count = 1 THEN
-   SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].LastSibling},[Measures].[План сегмент Количество клиентов]) 
+   SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы]},[Measures].[План сегмент Количество клиентов]) 
    ELSE
    [Measures].[План сегмент Количество клиентов]
    END)
@@ -180,7 +172,7 @@ MEMBER [Отклонение УВМ от плана] AS
 ,FORMAT_STRING = "#,##0.00%"
 
 MEMBER [Кол клиентов Сумма по сегментам] AS
-SUM(EXISTING([Сегменты].[Сегмент]), [Кол клиентов ])
+SUM(EXISTING([Сегменты].[Сегмент].[Сегмент]), [Кол клиентов ])
 ,FORMAT_STRING = "#,##0"
 
 MEMBER [Кол клиентов Сумма по сегментам накопительно] AS
@@ -211,7 +203,7 @@ MEMBER [Выполнение плана Кол артикулов] AS
 ,FORMAT_STRING = "#,##0.00%"
 
 MEMBER [План сегмент Стоимость одного артикула ] AS
-SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы].LastSibling}, [План сегмент Сумма Выручка магазин])/[План сегмент Количество артикулов ]
+SUM({[Даты].[Месяцы].FirstSibling:[Даты].[Месяцы]}, [План сегмент Сумма Выручка магазин])/[План сегмент Количество артикулов ]
 //[План сегмент Сумма Выручка магазин]
 ,FORMAT_STRING = "#,##0.00"
 
