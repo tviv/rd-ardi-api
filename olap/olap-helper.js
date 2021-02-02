@@ -322,7 +322,7 @@ let mdx  = {
     convertValuesToMDXTupleString: function(hierarchyName, values) {
         if (!(values instanceof Array)) return null;
 
-        let result = `{${values.map(x=>`${hierarchyName}.${(x == '0' ? '[(All)]' : `&[${x}]`)}`).join(',')}}`;
+        let result = `{${values.map(x=>`${hierarchyName}.${(x === 'All' || x === '') ? '[(All)]' : `&[${x}]`}`).join(',')}}`;
         return result;
     },
 
