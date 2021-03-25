@@ -89,8 +89,11 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
           member [Подразделения].[Подразделение].[Общий КУП] as
          [Подразделения].[Подразделение].[All]
         
+        MEMBER [Подразделения].[Подразделение].[Дни без продажи %withoutSalesPrefix%] AS
+        Descendants([Даты].[гост Недели].CurrentMember,,LEAVES).Count - COUNT(FILTER(Descendants([Даты].[гост Недели].CurrentMember,,LEAVES), (%ShopFilter%,[КУУП])))
+
         SELECT [Даты].[гост Недели].[гост Неделя] ON 0
-        ,NON EMPTY {[Подразделения].[Подразделение].[Общий КУП], [Подразделения].[Подразделение].[Подразделение].Members} ON 1
+        ,NON EMPTY {[Подразделения].[Подразделение].[Дни без продажи %withoutSalesPrefix%], [Подразделения].[Подразделение].[Общий КУП], [Подразделения].[Подразделение].[Подразделение].Members} ON 1
         FROM
         (
         SELECT ([Подразделения].[Подразделение].&[0]
@@ -105,6 +108,8 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
     //todo more unique
     let condString = helper.getMDXConditionString(req.body);
     query = query.replace(/\(\s*select\s*\(((.|\s)+)\)\s*on 0/igm, '(select (' + condString + ') on 0'); //todo remove reaptings - replace only group 1
+    query = query.replace('%ShopFilter%', req.body.shopFilter || '[Подразделения].[Подразделение].[All]');
+    query = query.replace(/%withoutSalesPrefix%/gm, req.body.shopFilter ? 'магазина' : 'сети');
     //console.log(query);
     olap.getDataset(query)
         .then((result)=>{
