@@ -85,13 +85,15 @@ router.post("/sales-cone/dynamic-cup", function(req , res) {
         IIF([Подразделения].[Подразделение].CurrentMember is [Подразделения].[Подразделение].[All],
          ([Measures].[КУП], [Подразделения].[Подразделение].[All]),
          [Measures].[КУП])
+         ,FORMAT_STRING = "#,##0.00"
         
           member [Подразделения].[Подразделение].[Общий КУП] as
          [Подразделения].[Подразделение].[All]
         
         MEMBER [Подразделения].[Подразделение].[Дни без продажи %withoutSalesPrefix%] AS
-        Descendants([Даты].[гост Недели].CurrentMember,,LEAVES).Count - COUNT(FILTER(Descendants([Даты].[гост Недели].CurrentMember,,LEAVES), (%ShopFilter%,[КУУП])))
-
+        ROUND(Descendants([Даты].[гост Недели].CurrentMember,,LEAVES).Count - AVG(Descendants(%ShopFilter%,,LEAVES), IIF(([Подразделения].[Подразделение].CurrentMember, [КУУП]) > 0, COUNT(NONEMPTY(Descendants([Даты].[гост Недели].CurrentMember,,LEAVES), ([Подразделения].[Подразделение].CurrentMember, [КУУП]))), NULL)),2)
+        ,FORMAT_STRING = "#,##0.00"
+        
         SELECT [Даты].[гост Недели].[гост Неделя] ON 0
         ,NON EMPTY {[Подразделения].[Подразделение].[Дни без продажи %withoutSalesPrefix%], [Подразделения].[Подразделение].[Общий КУП], [Подразделения].[Подразделение].[Подразделение].Members} ON 1
         FROM
