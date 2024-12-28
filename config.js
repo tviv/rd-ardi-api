@@ -1,5 +1,5 @@
 const path = require('path');
-if (process.env.CHECK_PROD !== 'yes')
+if (process.env.CHECK_PROD?.trim() !== 'yes')
     require('dotenv').config({ path: path.join(__dirname, '.env') });
 else
     require('dotenv').config({ path: path.join(__dirname, '.env.production') });

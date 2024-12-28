@@ -19,8 +19,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node App.js",
-    "start-prod": "set CHECK_PROD=yes && node App.js"
+    "start": "node app.js",
+    "start-prod": "set CHECK_PROD=yes && node app.js"
   },
   "author": "",
   "license": "ISC"

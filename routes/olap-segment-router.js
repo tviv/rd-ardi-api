@@ -87,13 +87,46 @@ const doGeneralPreHandle = function (req) {
 };
 
 const doGeneralQueryHandingAndRun = function (req, res, q) {
+    const isYearToYear = req.query.isYearToYear === 'true';
     var query = q.replace(/%cond%/gi, req.body && req.body.withSegment310 === true ? '%cond%' : '%cond%, [Сегменты].[Сегмент310].&[0]');
 
     doGeneralPreHandle(req);
 
     let condString = helper.getMDXConditionString(req.body);
 
-    query = query.replace('%cond%', condString);
+    let yearToYearPart = '';
+    let selectFields = selectBlock;
+    if (isYearToYear) {
+
+        const regex = /\[Даты\]\.\[Месяцы\]\.\&\[(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\]/;
+        const match = condString.match(regex);
+
+        if (match) {
+            let [fullMatch, year, month, day, hour, minute, second] = match;
+            let date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+            date.setFullYear(date.getFullYear() - 1);
+
+            let newYear = date.getFullYear();
+            const  pastYearDateCond = `[Даты].[Месяцы].&[${newYear}-${month}-${day}T${hour}:${minute}:${second}]`;
+
+            yearToYearPart = yearToYearWithBlock
+            selectFields = yeartoYearselectBlock;
+            //speed up, not good solution
+            if (!query.includes('[Даты].[Дата].[Дата] ON ROWS')) {
+                yearToYearPart = yearToYearPart.replace(/SsasRdExtention\.\[ДатыПГП\]\(\)/gi, `(${pastYearDateCond},[Даты].[Это полный день Зеркало].&[True])`)
+            }
+
+           // console.log(pastYearDateCond); // Output: [Даты].[Месяцы].&[2023-06-01T00:00:00]
+        }
+    }
+
+
+
+
+    query = query
+        .replace(/%yearToYearPart%/g, yearToYearPart)
+        .replace('%cond%', condString)
+        .replace(/SELECT\s*\{\s*\}/, `SELECT { ${selectFields} }`);
 
     helper.handleMdxQueryWithAuth(query, req, res);
 };
@@ -106,6 +139,8 @@ WITH
 MEMBER [План Кол артикулов на 1 клиента] AS
 [План сегмент Количество артикулов ]/[План Количество клиентов ]
 ,FORMAT_STRING = "#,##0.00"
+
+%yearToYearPart%
 
 MEMBER [Кол клиентов ] as SUM(([Даты].[Месяцы].[All],[Даты].[Это полный день].[All], [Даты].[Дата].[All], [Даты чека].[Это полный день].&[Да], 
     
@@ -244,6 +279,11 @@ MEMBER [Доля Выручки без НДС] AS
 ,FORMAT_STRING = "#,##0.00%"
 
 SELECT {
+
+        } ON COLUMNS
+`;
+
+const selectBlock = `
     [Measures].[План сегмент Выручка без НДС]
     ,[Measures].[Накопительная выручка за месяц без НДС]
     ,[Measures].[Выполнение план сегмент Выручка без НДС]
@@ -273,7 +313,107 @@ SELECT {
     ,[Measures].[Остаток количество]
     ,[Measures].[Остаток сумма без НДС]
     ,[Measures].[Сумма закупки]
-        } ON COLUMNS
 `;
+
+const yearToYearWithBlock = `
+
+--год к году
+MEMBER [Прогресс Накопительная выручка за месяц без НДС пгп] AS
+IIF ([Сумма] > 0, [Накопительная выручка за полные дни месяца без НДС]/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Накопительная выручка за месяц без НДС]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План сегмент Выручка без НДС пгп] AS
+IIF ([Сумма] > 0, ([План сегмент Выручка без НДС] / [ИтогоКолДнейПлана])/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Накопительная выручка за полные дни месяца без НДС] / [КолДнейПлана]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Накопительная маржа за месяц без ндс пгп] AS
+IIF ([Сумма] > 0, [Накопительная маржа за полные дни месяца без НДС]/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Накопительная маржа за месяц без НДС]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План сегмент Маржа без НДС пгп] AS
+IIF ([Сумма] > 0, ([План сегмент Маржа без НДС] / [ИтогоКолДнейПлана])/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Накопительная маржа за полные дни месяца без НДС] / [КолДнейПлана]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Уровень маржи без НДС пгп] AS
+IIF ([Сумма] > 0, [Уровень маржи без НДС]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Уровень маржи без НДС]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План сегмент уровень маржи пгп] AS
+IIF ([Сумма] > 0, [План сегмент уровень маржи]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Уровень маржи без НДС]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Кол клиентов Сумма по сегментам накопительно пгп] AS
+IIF ([Сумма] > 0, [Кол клиентов Сумма по сегментам накопительно]/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Кол клиентов Сумма по сегментам накопительно]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План Количество клиентов пгп] AS
+IIF ([Сумма] > 0, ([План Количество клиентов ] / [ИтогоКолДнейПлана])/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Кол клиентов Сумма по сегментам накопительно] / [КолДнейПлана]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Кол артикулов накопительно пгп] AS
+IIF ([Сумма] > 0, [Кол артикулов накопительно]/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Кол артикулов накопительно]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План сегмент Количество артикулов пгп] AS
+IIF ([Сумма] > 0, ([План сегмент Количество артикулов ] / [ИтогоКолДнейПлана])/SUM(SsasRdExtention.[ДатыПГП](), [Measures].[Кол артикулов накопительно] / [КолДнейПлана]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Ср. ст-ть артикула пгп] AS
+IIF ([Сумма] > 0, [Ср. ст-ть артикула]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Ср. ст-ть артикула]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План сегмент Стоимость одного артикула пгп] AS
+IIF ([Сумма] > 0, [План сегмент Стоимость одного артикула ]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Ср. ст-ть артикула]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+
+MEMBER [Прогресс Кол артикулов на 1 сум клиента пгп] AS
+IIF ([Сумма] > 0, [Кол артикулов на 1 сум клиента]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Кол артикулов на 1 сум клиента]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+MEMBER [Прогресс План Кол артикулов на 1 клиента пгп] AS
+IIF ([Сумма] > 0, [План Кол артикулов на 1 клиента]/AVG(SsasRdExtention.[ДатыПГП](), [Measures].[Кол артикулов на 1 сум клиента]) - 1, NULL)
+,FORMAT_STRING = "#,##0.00%"
+`;
+
+const yeartoYearselectBlock = `
+    [Measures].[План сегмент Выручка без НДС]
+    ,[Measures].[Накопительная выручка за месяц без НДС]
+    ,[Measures].[Выполнение план сегмент Выручка без НДС]
+    ,[Measures].[Доля Выручки без НДС]
+    ,[Прогресс Накопительная выручка за месяц без НДС пгп]
+    ,[Прогресс План сегмент Выручка без НДС пгп]
+    
+    ,[Measures].[План сегмент Маржа без НДС]
+    ,[Measures].[Накопительная маржа за месяц без ндс]
+    ,[Measures].[Выполнение план сегмент Маржа без НДС]
+    ,[Measures].[Отклонение выполнение по ВМ от выполнение по ТО]
+    ,[Прогресс Накопительная маржа за месяц без ндс пгп]
+    ,[Прогресс План сегмент Маржа без НДС пгп]
+    
+    ,[Measures].[План сегмент уровень маржи]
+    ,[Measures].[Уровень маржи без НДС]
+    ,[Measures].[Отклонение УВМ от плана]
+    ,[Прогресс Уровень маржи без НДС пгп]
+    ,[Прогресс План сегмент уровень маржи пгп]
+    
+    ,[Measures].[План Количество клиентов ]
+    ,[Measures].[Кол клиентов Сумма по сегментам накопительно]
+    ,[Measures].[Выполнение плана Кол клиентов]
+    ,[Прогресс Кол клиентов Сумма по сегментам накопительно пгп]
+    ,[Прогресс План Количество клиентов пгп]
+    
+    ,[Measures].[План сегмент Количество артикулов ]
+    ,[Measures].[Кол артикулов накопительно]
+    ,[Measures].[Выполнение плана Кол артикулов]
+    ,[Прогресс Кол артикулов накопительно пгп]
+    ,[Прогресс План сегмент Количество артикулов пгп]
+
+    ,[Measures].[План сегмент Стоимость одного артикула ]
+    ,[Measures].[Ср. ст-ть артикула ]
+    ,[Measures].[Отклонение от плана Ср. ст-ть артикула]
+    ,[Прогресс Ср. ст-ть артикула пгп]
+    ,[Прогресс План сегмент Стоимость одного артикула пгп]    
+    
+    ,[Measures].[План Кол артикулов на 1 клиента]
+    ,[Measures].[Кол артикулов на 1 сум клиента]
+    ,[Measures].[Отклонение от плана Кол артикулов на 1 клиента]
+    ,[Прогресс Кол артикулов на 1 сум клиента пгп]
+    ,[Прогресс План Кол артикулов на 1 клиента пгп]
+`;
+
+
 
 module.exports = router;

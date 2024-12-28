@@ -53,9 +53,9 @@ const rh = {
             options = queryObject.options;
         }
         auth.withAuth(req, res)(olap.getDataset, query)
-            .then((result)=>{
+            ?.then((result)=>{
                 res.json(this.applyOptionsToQueryResult(olap.dataset2Tableset(result.data), options))})
-            .catch((err)=>{
+            ?.catch((err)=>{
                 if (err && err.status) {
                     res.statusCode = err.status
                 }
