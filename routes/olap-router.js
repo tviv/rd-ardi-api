@@ -3,11 +3,13 @@ const router = express.Router();
 const olap = require('../olap/olap-helper');
 const helper = require('./router-helper');
 const olapSegmentReportRouter = require('./olap-segment-router');
+const olapChecklistRouter = require('./olap-checklist-router');
 const CEP = require ('./ColumnExtraProperty').ColumnExtraProperty;
 const REP = require ('./ColumnExtraProperty').RowExtraProperty;
 
 
 router.use('/segment', olapSegmentReportRouter);
+router.use('/checklist', olapChecklistRouter);
 
 router.post("/actuality", function(req , res) {
     const query = `
