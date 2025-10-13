@@ -6,15 +6,14 @@ const helper = require('./router-helper');
 const dailyRevenueFieldPrefix =
     `
     WITH MEMBER [День недели] as 
-    IIF([Measures].[Факт Балл]> 0, [Даты].[Дата].CurrentMember.PROPERTIES("День недели"), NULL)
+    IIF(ISEMPTY([Measures].[Факт Балл]), NULL, [Даты].[Дата].CurrentMember.PROPERTIES("День недели"))
     MEMBER [Соответствие ] AS
-	IIF([Макс Балл] > 0 OR [Measures].[Факт Балл] > 0, CASE 
+	IIF(ISEMPTY([Макс Балл]) AND ISEMPTY([Measures].[Факт Балл]), NULL, CASE 
 	WHEN [Соответствие] = 1 THEN "Соответствует"
 	WHEN [Соответствие] = 0 THEN "Не соответствует" 
 	ELSE "Соответствует условно"
-	END,
-	NULL)
-    MEMBER [tmpCol] AS IIF([Measures].[Факт Балл] > 0, 1, NULL) 
+	END)
+    MEMBER [tmpCol] AS IIF(ISEMPTY([Measures].[Факт Балл]), NULL, 1) 
     SELECT {
     %tempCol%
     [Measures].[День недели], [Кол нарушений], [Макс Балл], [Факт Балл], [Соответствие ], [Кол чеклистов] 
@@ -27,11 +26,14 @@ router.post("/", function(req , res) {
         return;
     }
 
+    const mainSelect = req.query.withDetails ? '[Даты].[Дата].[Дата], [Подразделения].[Подразделение].[Подразделение], [Чеклист Пункты].[Чеклист Пункты].[Level 04], Filter([Чеклист Нарушения].[Чеклист Нарушение].[Чеклист Нарушение], [Кол нарушений] > 0)' : '[Даты].[Дата].Members';
+    
+
     const shopSelectString = req.body.withShopColumn ? ', [Подразделения].[Подразделение].Members' : '';
 
     let query = `
         ${dailyRevenueFieldPrefix} 
-        , NON EMPTY ([Даты].[Дата].Members ${shopSelectString}) ON ROWS
+        , NON EMPTY (${mainSelect} ${shopSelectString}) ON ROWS
         FROM (SELECT %not_full_month_cond% ON 0
             FROM [Чеклисты] 
         )
@@ -39,7 +41,7 @@ router.post("/", function(req , res) {
         `;
 
     //pre cond handling
-    let notFullMonthCond = '{[Даты].[Дата].[All]}';
+    let notFullMonthCond = req.query.withDetails ? req.body.data :'{[Даты].[Дата].[All]}';
     if (req.body && req.body.periodFilter) {
         if (helper.isFullMonth(req.body.periodFilter.date, req.body.periodFilter.endDate)) {
             req.body.filterArray.push(
